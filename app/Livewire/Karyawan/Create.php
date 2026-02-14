@@ -23,6 +23,8 @@ use App\Services\Karyawan\{
   PhotoUpload
 };
 
+use App\Services\Log\AuditLogger;
+
 #[Title('Tambah Karyawan')]
 class Create extends Component
 {
@@ -193,6 +195,12 @@ class Create extends Component
         'message' => 'Data berhasil ditambah.'
       ]);
     } catch (\Throwable $e) {
+      AuditLogger::error('Create karyawan', [
+        'nama'        => $this->nama,
+        'lokasi_id'   => $this->lokasi_id,
+        'jabatan_id'  => $this->jabatan_id,
+        'error'       => $e->getMessage(),
+      ]);
 
       if ($imgPath !== 'uploads/default.webp') {
         File::delete(public_path($imgPath));

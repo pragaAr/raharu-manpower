@@ -13,6 +13,7 @@ use Livewire\Attributes\On;
 
 use App\Models\Karyawan;
 use App\Services\Karyawan\UpdateData;
+use App\Services\Log\AuditLogger;
 
 class Edit extends Component
 {
@@ -84,32 +85,47 @@ class Edit extends Component
       ]
     );
 
-    $karyawan = Karyawan::findOrFail($this->karyawanId);
+    if ($this->karyawanId) {
+      try {
+        $karyawan = Karyawan::findOrFail($this->karyawanId);
 
-    $service->update(
-      $karyawan,
-      $this->fotoUpload,
-      [
-        'nama'        => $this->nama,
-        'ktp'         => $this->ktp,
-        'agama'       => $this->agama,
-        'alamat'      => $this->alamat,
-        'telpon'      => $this->telpon,
-        'jk'          => $this->jk,
-        'marital'     => $this->marital,
-        'pendidikan'  => $this->pendidikan,
-        'bpjsTk'      => $this->bpjsTk,
-        'bpjsKs'      => $this->bpjsKs,
-        'tglLahir'    => $this->tglLahir,
-      ]
-    );
+        $service->update(
+          $karyawan,
+          $this->fotoUpload,
+          [
+            'nama'        => $this->nama,
+            'ktp'         => $this->ktp,
+            'agama'       => $this->agama,
+            'alamat'      => $this->alamat,
+            'telpon'      => $this->telpon,
+            'jk'          => $this->jk,
+            'marital'     => $this->marital,
+            'pendidikan'  => $this->pendidikan,
+            'bpjsTk'      => $this->bpjsTk,
+            'bpjsKs'      => $this->bpjsKs,
+            'tglLahir'    => $this->tglLahir,
+          ]
+        );
 
-    $this->dispatch('alert', [
-      'type'    => 'success',
-      'message' => 'Data berhasil diupdate.',
-    ]);
+        $this->dispatch('alert', [
+          'type'    => 'success',
+          'message' => 'Data berhasil diupdate.',
+        ]);
 
-    $this->dispatch('closeEdit');
-    $this->dispatch('karyawan-updated')->to(Index::class);
+        $this->dispatch('closeEdit');
+        $this->dispatch('karyawan-updated')->to(Index::class);
+      } catch (\Exception $e) {
+        AuditLogger::error('Edit karyawan gagal', [
+          'karyawan_id' => $this->karyawanId,
+          'error'       => $e->getMessage(),
+        ]);
+
+        $this->dispatch('closeEdit');
+        $this->dispatch('alert', [
+          'type'    => 'error',
+          'message' => 'Terjadi kesalahan saat edit data.'
+        ]);
+      }
+    }
   }
 }

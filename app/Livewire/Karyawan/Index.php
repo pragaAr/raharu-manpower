@@ -27,6 +27,8 @@ use App\Services\Karyawan\{
   DeleteData
 };
 
+use App\Services\Log\AuditLogger;
+
 #[Title('Karyawan')]
 class Index extends Component
 {
@@ -302,17 +304,28 @@ class Index extends Component
   {
     $this->authorize('karyawan.delete');
 
-    if (!$this->deleteId) return;
+    if ($this->deleteId) {
+      try {
+        $service->delete($this->deleteId);
+        $this->dispatch('alert', [
+          'type'    => 'success',
+          'message' => 'Data berhasil dihapus.'
+        ]);
+        $this->deleteId = null;
+        $this->dispatch('closeConfirmModal');
+      } catch (\Exception $e) {
+        AuditLogger::error('Delete karyawan gagal', [
+          'karyawan_id' => $this->deleteId,
+          'error'       => $e->getMessage(),
+        ]);
 
-    $service->delete($this->deleteId);
-
-    $this->dispatch('alert', [
-      'type'    => 'success',
-      'message' => 'Data berhasil dihapus.',
-    ]);
-
-    $this->deleteId = null;
-    $this->dispatch('closeConfirmModal');
+        $this->dispatch('closeConfirmModal');
+        $this->dispatch('alert', [
+          'type'    => 'error',
+          'message' => 'Terjadi kesalahan saat menghapus data.'
+        ]);
+      }
+    }
   }
 
   public function exportExcel(ExcelExporter $exporter)

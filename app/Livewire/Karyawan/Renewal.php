@@ -10,6 +10,7 @@ use Livewire\Attributes\Title;
 use App\Models\Karyawan;
 
 use App\Services\Karyawan\Renewalkontrak;
+use App\Services\Log\AuditLogger;
 
 #[Title('Renewal Karyawan')]
 class Renewal extends Component
@@ -166,6 +167,10 @@ class Renewal extends Component
       ]);
       $this->dispatch('refresh-notification');
     } catch (\Throwable $e) {
+      AuditLogger::error('Renewal karyawan gagal', [
+        'karyawan_id' => $this->karyawanId,
+        'error'       => $e->getMessage(),
+      ]);
       $this->dispatch('alert', [
         'type'    => 'error',
         'message' => 'Kontrak gagal diperpanjang: ' . $e->getMessage()

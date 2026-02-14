@@ -13,6 +13,7 @@ use App\Models\{
 };
 
 use App\Services\Karyawan\UpdateStatus;
+use App\Services\Log\AuditLogger;
 
 class Status extends Component
 {
@@ -180,6 +181,10 @@ class Status extends Component
       $this->dispatch('karyawan-updated');
       $this->dispatch('closeStatus');
     } catch (\Exception $e) {
+      AuditLogger::error('Ubah status karyawan gagal', [
+        'karyawan_id' => $this->karyawanId,
+        'error'       => $e->getMessage(),
+      ]);
       $this->dispatch('alert', [
         'type'    => 'error',
         'message' => 'Terjadi kesalahan saat mengubah status: ' . $e->getMessage(),

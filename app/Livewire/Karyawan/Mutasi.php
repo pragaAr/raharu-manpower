@@ -15,6 +15,7 @@ use App\Models\{
 };
 
 use App\Services\Karyawan\MutasiData;
+use App\Services\Log\AuditLogger;
 
 #[Title('Mutasi Karyawan')]
 class Mutasi extends Component
@@ -305,6 +306,10 @@ class Mutasi extends Component
         'karyawans' => $this->karyawans,
       ]);
     } catch (\Throwable $e) {
+      AuditLogger::error('Mutasi karyawan gagal', [
+        'karyawan_id' => $this->karyawanId,
+        'error'       => $e->getMessage(),
+      ]);
       $this->dispatch('alert', [
         'type'    => 'error',
         'message' => 'Karyawan gagal dimutasi: ' . $e->getMessage()
