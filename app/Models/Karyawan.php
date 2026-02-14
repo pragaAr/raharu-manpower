@@ -131,4 +131,11 @@ class Karyawan extends Model
         ])
       );
   }
+
+  public function scopeBolehAbsen($query)
+  {
+    return $query->whereHas('kategori', function ($q) {
+      $q->whereNotIn('nama', ['harian', 'magang']);
+    });
+  }
 }

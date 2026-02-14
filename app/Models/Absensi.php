@@ -18,6 +18,12 @@ class Absensi extends Model
     'jam_pulang',
   ];
 
+  protected $casts = [
+    'tanggal'     => 'date',
+    'jam_masuk'   => 'datetime:H:i',
+    'jam_pulang'  => 'datetime:H:i',
+  ];
+
   public function logs()
   {
     return $this->hasMany(AbsensiLog::class);

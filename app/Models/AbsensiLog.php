@@ -20,6 +20,10 @@ class AbsensiLog extends Model
     'keterangan',
   ];
 
+  protected $casts = [
+    'jam' => 'datetime:H:i'
+  ];
+
   public function absensi()
   {
     return $this->belongsTo(Absensi::class);

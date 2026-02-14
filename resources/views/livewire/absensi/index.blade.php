@@ -15,36 +15,34 @@
 
       <div class="table-responsive">
         <table class="table table-vcenter table-bordered">
-          <thead>
+          <thead class="text-center">
             <tr>
-              <th class="fs-5 text-center" style="width:8%">#</th>
+              <th class="fs-5" style="width:8%">#</th>
               <th class="fs-5">Tanggal</th>
               <th class="fs-5">NIK</th>
-              <th class="fs-5">Nama</th>
               <th class="fs-5">Masuk</th>
               <th class="fs-5">Pulang</th>
               <th class="fs-5">Source</th>
               <th class="fs-5">Input Oleh</th>
               <th class="fs-5">Keterangan</th>
               @if($hasActions)
-              <th class="fs-5 text-center">Aksi</th>
+              <th class="fs-5">Aksi</th>
               @endif
             </tr>
           </thead>
-          <tbody>
+          <tbody class="text-center">
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
-              <td class="text-center">{{ $data->firstItem() + $i }}.</td>
-              <td>{{ $row->tanggal }}</td>
-              <td class="text-uppercase">{{ $row->nik }}</td>
-              <td class="text-uppercase">{{ $row->nama }}</td>
-              <td>{{ $row->jam_masuk ?? '-' }}</td>
-              <td>{{ $row->jam_pulang ?? '-' }}</td>
+              <td>{{ $data->firstItem() + $i }}.</td>
+              <td>{{ $row->tanggal->format('d-m-Y') }}</td>
+              <td class="text-uppercase" title="{{ $row->karyawan->nama }}" style="cursor: help;">{{ $row->karyawan->nik }}</td>
+              <td>{{ optional($row->jam_masuk)->format('H:i') ?? '-' }}</td>
+              <td>{{ optional($row->jam_pulang)->format('H:i') ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->lastLog->source ?? '-' }}</td>
-              <td class="text-uppercase">{{ $row->lastLog?->inputBy?->name ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->lastLog?->inputBy?->username ?? '-' }}</td>
               <td>{{ $row->lastLog->keterangan ?? '-' }}</td>
               @if($hasActions)
-              <td class="text-center">
+              <td>
                 <div class="btn-group" role="group" style="gap: 3px;">
                   @can('absensi.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled" wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
@@ -109,7 +107,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="10" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="9" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -135,12 +133,6 @@
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
-    Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
     const dateFields = ['tanggal', 'masuk', 'pulang'];
 
     dateFields.forEach((id) => {
@@ -151,6 +143,71 @@
         });
       }
     });
+
+    const selectEl = document.getElementById('karyawan-select');
+    const errorContainer = document.getElementById('karyawan-error');
+
+    bindTomSelectModalValidation({ modalEl: modalEl, selectEl, errorEl: errorContainer});
+
+    if (selectEl) {
+      if (selectEl.tomselect) {
+        selectEl.tomselect.destroy();
+      }
+
+      let karyawanSelect = new TomSelect(selectEl, {
+        create: false,
+        allowEmptyOption: true,
+        placeholder: 'Pilih Karyawan..',
+        items: [],
+        onChange(value) {
+          hiddenInput.value = value
+          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+      })
+      
+      karyawanSelect.control_input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          e.stopPropagation()
+        }
+      })
+
+      Livewire.on('openModal', (payload = {}) => {
+        toggleModal('addEditModal', 'show');
+
+        if (karyawanSelect.activeOption) {
+          karyawanSelect.setActiveOption(null)
+        }
+
+        if (payload.karyawan_id) {
+          karyawanSelect.setValue(payload.karyawan_id, true)
+        } else {
+          karyawanSelect.clear(true)
+        }
+
+        karyawanSelect.refreshOptions(false)
+      });
+
+      Livewire.on('closeModal', () => {
+        toggleModal('addEditModal', 'hide');
+        karyawanSelect.clear(true)
+
+        if (karyawanSelect.activeOption) {
+          karyawanSelect.setActiveOption(null)
+        }
+      });
+    }
+
+    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+    document.addEventListener('resetSelect', () => {
+      document.querySelectorAll('select').forEach(select => {
+        if (select.tomselect) {
+          select.tomselect.clear()
+        }
+      })
+    });   
 
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
   })

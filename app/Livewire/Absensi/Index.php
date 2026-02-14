@@ -10,7 +10,13 @@ use Livewire\{
 };
 use Livewire\Attributes\Title;
 
-use App\Models\{Absensi, AbsensiLog, Karyawan};
+use App\Models\{
+  Absensi,
+  Karyawan
+};
+
+use App\Services\Absensi\AbsensiService;
+use App\Services\Log\AbsensiLogger;
 
 #[Title('Absensi')]
 class Index extends Component
@@ -22,9 +28,9 @@ class Index extends Component
   public $tanggal;
   public $masuk;
   public $pulang;
-  public $source    = 'manpower';
-  public $inputBy;
-  public $keterangan;
+  public $source = 'manual';
+  public $keteranganMasuk;
+  public $keteranganPulang;
   public $isEdit    = false;
   public $deleteId  = null;
 
@@ -43,7 +49,10 @@ class Index extends Component
 
   public function mount()
   {
-    $this->karyawans = Karyawan::orderBy('id')->get();
+    $this->karyawans = Karyawan::bolehAbsen()
+      ->select('id', 'nik', 'nama')
+      ->orderBy('id')
+      ->get();
   }
 
   public function updatedSearch()
@@ -95,6 +104,175 @@ class Index extends Component
     $this->dispatch('openModal');
   }
 
+  public function edit($id)
+  {
+    $this->authorize('absensi.edit');
+
+    $this->resetValidation();
+
+    $absensi = Absensi::with('logs')->find($id);
+
+    if (!$absensi) {
+      $this->dispatch('alert', [
+        'type'    => 'error',
+        'message' => 'Data tidak ditemukan.'
+      ]);
+      return;
+    }
+
+    $logMasuk = $absensi->logs
+      ->where('jenis', 'masuk')
+      ->sortByDesc('id')
+      ->first();
+
+    $logPulang = $absensi->logs
+      ->where('jenis', 'pulang')
+      ->sortByDesc('id')
+      ->first();
+
+    $this->karyawanId = $absensi->karyawan_id;
+    $this->tanggal    = $absensi->tanggal?->format('Y-m-d');
+    $this->masuk      = $absensi->jam_masuk?->format('H:i');
+    $this->pulang     = $absensi->jam_pulang?->format('H:i');
+
+    $this->keteranganMasuk  = $logMasuk?->keterangan;
+    $this->keteranganPulang = $logPulang?->keterangan;
+
+    $this->absenId = $id;
+    $this->isEdit  = true;
+
+    $this->dispatch('openModal', karyawan_id: $this->karyawanId);
+  }
+
+  public function save(AbsensiService $service)
+  {
+    $this->validate(
+      [
+        'karyawanId'        => ['required', 'exists:karyawan,id'],
+        'tanggal'           => ['required', 'date'],
+        'masuk'             => ['nullable', 'date_format:H:i'],
+        'keteranganMasuk'   => ['required_with:masuk'],
+        'pulang'            => ['nullable', 'date_format:H:i'],
+        'keteranganPulang'  => ['required_with:pulang'],
+      ],
+      [
+        'karyawanId.required' => 'Karyawan wajib dipilih.',
+        'tanggal.required'    => 'Tanggal wajib diisi.',
+        'keteranganMasuk.required_with'  => 'Keterangan masuk wajib diisi jika jam masuk diisi.',
+        'keteranganPulang.required_with' => 'Keterangan pulang wajib diisi jika jam pulang diisi.',
+      ]
+    );
+
+    if ($this->masuk && $this->pulang && $this->pulang <= $this->masuk) {
+      $this->addError('pulang', 'Jam pulang harus lebih besar dari jam masuk.');
+      return;
+    }
+
+    if (!$this->masuk && !$this->pulang) {
+      $this->addError('masuk', 'Minimal isi jam masuk atau jam pulang.');
+      return;
+    }
+
+    $this->isEdit ? $this->updateData($service) : $this->storeData($service);
+  }
+
+  public function storeData(AbsensiService $service)
+  {
+    $this->authorize('absensi.create');
+
+    try {
+      $exists = Absensi::where('karyawan_id', $this->karyawanId)
+        ->whereDate('tanggal', $this->tanggal)
+        ->exists();
+
+      if ($exists) {
+        $this->addError('tanggal', 'Absensi untuk tanggal tersebut sudah ada.');
+        return;
+      }
+
+      $service->store(
+        $this->source,
+        [
+          'karyawan_id'       => $this->karyawanId,
+          'tanggal'           => $this->tanggal,
+          'jam_masuk'         => $this->masuk,
+          'jam_pulang'        => $this->pulang,
+          'keterangan_masuk'  => $this->keteranganMasuk,
+          'keterangan_pulang' => $this->keteranganPulang,
+        ]
+      );
+
+      $this->dispatch('alert', [
+        'type'    => 'success',
+        'message' => 'Data berhasil ditambah.'
+      ]);
+
+      $this->resetForm();
+      $this->dispatch('closeModal');
+    } catch (\Throwable $e) {
+      AbsensiLogger::error('Create absensi gagal', [
+        'karyawan_id' => $this->karyawanId,
+        'tanggal'     => $this->tanggal,
+        'error'       => $e->getMessage(),
+      ]);
+
+      $this->dispatch('alert', [
+        'type'    => 'error',
+        'message' => 'Terjadi kesalahan saat menyimpan data.'
+      ]);
+    }
+  }
+
+  public function updateData(AbsensiService $service)
+  {
+    $this->authorize('absensi.edit');
+
+    try {
+      $absen = Absensi::findOrFail($this->absenId);
+
+      $exists = Absensi::where('karyawan_id', $this->karyawanId)
+        ->whereDate('tanggal', $this->tanggal)
+        ->where('id', '!=', $absen->id)
+        ->exists();
+
+      if ($exists) {
+        $this->addError('tanggal', 'Absensi untuk tanggal tersebut sudah ada.');
+        return;
+      }
+
+      $service->update(
+        $absen->id,
+        $this->source,
+        [
+          'karyawan_id'       => $this->karyawanId,
+          'tanggal'           => $this->tanggal,
+          'jam_masuk'         => $this->masuk,
+          'jam_pulang'        => $this->pulang,
+          'keterangan_masuk'  => $this->keteranganMasuk,
+          'keterangan_pulang' => $this->keteranganPulang,
+        ]
+      );
+
+      $this->dispatch('alert', [
+        'type'    => 'success',
+        'message' => 'Data berhasil diupdate.'
+      ]);
+
+      $this->resetForm();
+      $this->dispatch('closeModal');
+    } catch (\Throwable $e) {
+      AbsensiLogger::error('Update absensi gagal', [
+        'absensi_id' => $this->absenId,
+        'error'      => $e->getMessage(),
+      ]);
+
+      $this->dispatch('alert', [
+        'type'    => 'error',
+        'message' => 'Terjadi kesalahan saat mengupdate data.'
+      ]);
+    }
+  }
+
   public function confirmDelete($id)
   {
     $this->authorize('absensi.delete');
@@ -117,6 +295,11 @@ class Index extends Component
         $this->deleteId = null;
         $this->dispatch('closeConfirmModal');
       } catch (\Exception $e) {
+        AbsensiLogger::error('Delete absensi gagal', [
+          'absensi_id' => $this->deleteId,
+          'error'      => $e->getMessage(),
+        ]);
+
         $this->dispatch('closeConfirmModal');
         $this->dispatch('alert', [
           'type'    => 'error',
@@ -133,9 +316,8 @@ class Index extends Component
       'tanggal',
       'masuk',
       'pulang',
-      'source',
-      'inputBy',
-      'keterangan',
+      'keteranganMasuk',
+      'keteranganPulang',
     ]);
   }
 }
