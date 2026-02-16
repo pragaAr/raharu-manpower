@@ -223,7 +223,13 @@
       const element = document.getElementById(id);
       if (element) {
         element.addEventListener('click', function() {
-          this.showPicker ? this.showPicker() : this.click();
+          if (typeof this.showPicker === 'function') {
+            try {
+              this.showPicker();
+            } catch (e) {
+              console.warn("Gagal memanggil picker:", e);
+            }
+          }
         });
       }
     });

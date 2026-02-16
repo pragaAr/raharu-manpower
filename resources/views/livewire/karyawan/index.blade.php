@@ -420,13 +420,19 @@
       clearHidden('divisi-filter-hidden')
     });
 
-    const dateFields = ['tgl-masuk-start', 'tgl-masuk-end', 'tglMulai', 'tglSelesai', 'tglKeluar', 'tglEfektif'];
+    const dateFields = ['tgl-masuk-start', 'tgl-masuk-end', 'tglMulai', 'tglSelesai', 'tglKeluar', 'tglEfektif', 'tglLahir'];
 
     dateFields.forEach((id) => {
       const element = document.getElementById(id);
       if (element) {
         element.addEventListener('click', function() {
-          this.showPicker ? this.showPicker() : this.click();
+          if (typeof this.showPicker === 'function') {
+            try {
+              this.showPicker();
+            } catch (e) {
+              console.warn("Gagal memanggil picker:", e);
+            }
+          }
         });
       }
     });
