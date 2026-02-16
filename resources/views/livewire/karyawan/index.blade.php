@@ -421,21 +421,7 @@
     });
 
     const dateFields = ['tgl-masuk-start', 'tgl-masuk-end', 'tglMulai', 'tglSelesai', 'tglKeluar', 'tglEfektif', 'tglLahir'];
-
-    dateFields.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.addEventListener('click', function() {
-          if (typeof this.showPicker === 'function') {
-            try {
-              this.showPicker();
-            } catch (e) {
-              console.warn("Gagal memanggil picker:", e);
-            }
-          }
-        });
-      }
-    });
+    initDatePickers(dateFields);
 
     Livewire.on('open-pdf', () => window.open('/karyawan/export-pdf', '_blank'));
 

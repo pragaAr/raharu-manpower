@@ -216,23 +216,8 @@
 @push('scripts')
 <script>
   document.addEventListener('livewire:navigated', () => {
-
     const dateFields = ['efektif', 'tmk', 'thk', 'penetapan'];
-
-    dateFields.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.addEventListener('click', function() {
-          if (typeof this.showPicker === 'function') {
-            try {
-              this.showPicker();
-            } catch (e) {
-              console.warn("Gagal memanggil picker:", e);
-            }
-          }
-        });
-      }
-    });
+    initDatePickers(dateFields);
 
     const karyawanSelectEl = document.getElementById('karyawan-select')
     const kategoriSelectEl = document.getElementById('kategori-select')

@@ -135,21 +135,7 @@
     const modalConfirm = document.getElementById('confirmModal');
 
     const dateFields = ['tanggal', 'masuk', 'pulang'];
-
-    dateFields.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.addEventListener('click', function() {
-          if (typeof this.showPicker === 'function') {
-            try {
-              this.showPicker();
-            } catch (e) {
-              console.warn("Gagal memanggil picker:", e);
-            }
-          }
-        });
-      }
-    });
+    initDatePickers(dateFields);
 
     const selectEl = document.getElementById('karyawan-select');
     const errorContainer = document.getElementById('karyawan-error');
