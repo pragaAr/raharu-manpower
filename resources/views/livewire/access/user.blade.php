@@ -7,7 +7,10 @@
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" class="form-control" placeholder="Cari user..." wire:model.live.debounce.300ms="search">
+        <input type="text" class="form-control" 
+          placeholder="Cari user..." 
+          id="search-user" 
+          wire:model.live.debounce.300ms="search">
       </div>
 
       <div class="table-responsive">

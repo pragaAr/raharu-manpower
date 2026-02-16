@@ -12,16 +12,16 @@
       <div class="modal-body">
         <form wire:submit.prevent="save">
           <div class="mb-2">
-            <label class="form-label">Nama Akses</label>
-            <input type="text" wire:model.defer="name" class="form-control @error('name') is-invalid @enderror" autofocus autocomplete="off" placeholder="Contoh: modul.view">
+            <label for="name" class="form-label">Nama Akses</label>
+            <input type="text" wire:model.defer="name" class="form-control @error('name') is-invalid @enderror" autofocus autocomplete="off" id="name" placeholder="Contoh: modul.view">
             @error('name')
             <small class="text-danger">{{ $message }}</small>
             @enderror
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Label</label>
-            <input type="text" wire:model.defer="label" class="form-control @error('label') is-invalid @enderror" autocomplete="off" placeholder="Contoh: view modul">
+            <label for="label" class="form-label">Label</label>
+            <input type="text" wire:model.defer="label" class="form-control @error('label') is-invalid @enderror" autocomplete="off" id="label" placeholder="Contoh: view modul">
             @error('label')
             <small class="text-danger">{{ $message }}</small>
             @enderror

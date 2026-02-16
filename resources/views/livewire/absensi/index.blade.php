@@ -10,6 +10,7 @@
       <div class="mb-3">
         <input type="text" class="form-control"
           placeholder="Cari absensi..."
+          id="search-absensi"
           wire:model.live.debounce.300ms="search">
       </div>
 

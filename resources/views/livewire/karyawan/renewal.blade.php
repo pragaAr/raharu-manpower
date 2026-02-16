@@ -13,7 +13,7 @@
               <div class="row g-3">
 
                 <div class="col-md-12 mb-2">
-                  <label class="form-label">Karyawan</label>
+                  <label for="karyawan-select" class="form-label">Karyawan</label>
                   <input type="hidden" id="karyawan-hidden" wire:model.live="karyawanId">
                   <div wire:ignore>
                     <select id="karyawan-select" class="form-select">
@@ -33,38 +33,38 @@
 
                   <div class="row">
                     <div class="col-md-6 col-sm-6 mb-2">
-                      <label class="form-label">Penempatan</label>
-                      <input type="text" class="form-control text-uppercase" value="{{ $old['lokasi'] }}" placeholder="Penempatan" autocomplete="off" readonly disabled>
+                      <label for="oldLokasi" class="form-label">Penempatan</label>
+                      <input type="text" class="form-control text-uppercase" value="{{ $old['lokasi'] }}" placeholder="Penempatan" autocomplete="off" id="oldLokasi" readonly disabled>
                     </div>
 
                     <div class="col-md-6 col-sm-6 mb-2">
-                      <label class="form-label">Jabatan</label>
-                      <input type="text" class="form-control text-uppercase" value="{{ $old['jabatan'] }}" placeholder="Jabatan" autocomplete="off" readonly disabled>
+                      <label for="oldJabatan" class="form-label">Jabatan</label>
+                      <input type="text" class="form-control text-uppercase" value="{{ $old['jabatan'] }}" placeholder="Jabatan" autocomplete="off" id="oldJabatan" readonly disabled>
                     </div>
 
                     <div class="col-md-6 col-sm-6 mb-2">
-                      <label class="form-label">Divisi</label>
-                      <input type="text" class="form-control text-uppercase" value="{{ $old['divisi'] }}" placeholder="Divisi" autocomplete="off" readonly disabled>
+                      <label for="oldDivisi" class="form-label">Divisi</label>
+                      <input type="text" class="form-control text-uppercase" value="{{ $old['divisi'] }}" placeholder="Divisi" autocomplete="off" id="oldDivisi" readonly disabled>
                     </div>
 
                     <div class="col-md-6 col-sm-6 mb-2">
-                      <label class="form-label">Unit</label>
-                      <input type="text" class="form-control text-uppercase" value="{{ $old['unit'] }}" placeholder="Unit" autocomplete="off" readonly disabled>
+                      <label for="oldUnit" class="form-label">Unit</label>
+                      <input type="text" class="form-control text-uppercase" value="{{ $old['unit'] }}" placeholder="Unit" autocomplete="off" id="oldUnit" readonly disabled>
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">Efektif</label>
-                      <input type="date" class="form-control" value="{{ $old['efektif'] }}" autocomplete="off" readonly disabled>
+                      <label for="oldEfektif" class="form-label">Efektif</label>
+                      <input type="date" class="form-control" value="{{ $old['efektif'] }}" autocomplete="off" id="oldEfektif" readonly disabled>
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">TMK</label>
-                      <input type="date" class="form-control" value="{{ $old['tmk'] }}" autocomplete="off" readonly disabled>
+                      <label for="oldTmk" class="form-label">TMK</label>
+                      <input type="date" class="form-control" value="{{ $old['tmk'] }}" autocomplete="off" id="oldTmk" readonly disabled>
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">THK</label>
-                      <input type="date" class="form-control" value="{{ $old['thk'] }}" autocomplete="off" readonly disabled>
+                      <label for="oldThk" class="form-label">THK</label>
+                      <input type="date" class="form-control" value="{{ $old['thk'] }}" autocomplete="off" id="oldThk" readonly disabled>
                     </div>
                   </div>
                 </div>
@@ -75,7 +75,7 @@
 
                   <div class="row">
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">Efektif</label>
+                      <label for="efektif" class="form-label">Efektif</label>
                       <input type="date" class="form-control @error('new.efektif') is-invalid @enderror" wire:model="new.efektif" id="efektif" autocomplete="off">
                       @error('new.efektif')
                       <small class="text-danger">{{ $message }}</small>
@@ -83,7 +83,7 @@
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">TMK</label>
+                      <label for="tmk" class="form-label">TMK</label>
                       <input type="date" class="form-control @error('new.tmk') is-invalid @enderror" wire:model="new.tmk" id="tmk" autocomplete="off">
                       @error('new.tmk')
                       <small class="text-danger">{{ $message }}</small>
@@ -91,7 +91,7 @@
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">THK</label>
+                      <label for="thk" class="form-label">THK</label>
                       <input type="date" class="form-control @error('new.thk') is-invalid @enderror" wire:model="new.thk" id="thk" autocomplete="off">
                       @error('new.thk')
                       <small class="text-danger">{{ $message }}</small>
@@ -99,14 +99,14 @@
                     </div>
 
                     <div class="col-md-12 mb-2">
-                      <label class="form-label">Keterangan</label>
-                      <input type="text" class="form-control @error('keterangan') is-invalid @enderror" wire:model="keterangan" placeholder="Keterangan" autocomplete="off">
+                      <label for="keterangan" class="form-label">Keterangan</label>
+                      <input type="text" class="form-control @error('keterangan') is-invalid @enderror" wire:model="keterangan" placeholder="Keterangan" id="keterangan" autocomplete="off">
                       @error('keterangan')
                       <small class="text-danger">{{ $message }}</small>
                       @enderror
                     </div>
                     <div class="col-md-12">
-                      <label class="form-label invisible">space agar sejajar dengan input</label>
+                      <div class="form-label invisible">space agar sejajar dengan input</div>
 
                       <button class="btn btn-primary w-100" type="submit" 
                         wire:loading.attr="disabled" 

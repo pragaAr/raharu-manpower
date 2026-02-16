@@ -8,7 +8,7 @@
       <div class="modal-body">
         <form wire:submit.prevent="save" class="row g-2">
           <div class="col-md-12">
-            <label class="form-label">Karyawan</label>
+            <label for="karyawan-select" class="form-label">Karyawan</label>
             <input type="hidden" id="karyawan-hidden" wire:model="karyawan_id">
             <div wire:ignore>
               <select id="karyawan-select" class="form-select text-uppercase">
@@ -22,13 +22,13 @@
             </div>
           </div>
           <div class="col-md-12">
-            <label class="form-label">Username</label>
-            <input type="text" wire:model="username" class="form-control @error('username') is-invalid @enderror" placeholder="Username">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" wire:model="username" class="form-control @error('username') is-invalid @enderror" placeholder="Username" id="username" autocomplete="off">
             @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
 
           <div class="col-md-12">
-            <label class="form-label">Role</label>
+            <label for="role-select" class="form-label">Role</label>
             <input type="hidden" id="role-hidden" wire:model="role_id">
             <div wire:ignore>
               <select id="role-select" class="form-select text-uppercase">

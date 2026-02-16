@@ -12,7 +12,7 @@
       <div class="modal-body">
         <form wire:submit.prevent="save">
           <div class="mb-2">
-            <label class="form-label">Karyawan</label>
+            <label for="karyawan-select" class="form-label">Karyawan</label>
             <input type="hidden" id="karyawan-hidden" wire:model.defer="karyawanId">
             <div wire:ignore>
               <select id="karyawan-select" class="form-select">
@@ -27,8 +27,8 @@
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Tanggal</label>
-            <input type="date" wire:model.defer="tanggal" class="form-control text-uppercase @error('tanggal') is-invalid @enderror" autocomplete="off"id="tanggal" placeholder="Tanggal">
+            <label for="tanggal" class="form-label">Tanggal</label>
+            <input type="date" wire:model.defer="tanggal" class="form-control text-uppercase @error('tanggal') is-invalid @enderror" autocomplete="off" id="tanggal" placeholder="Tanggal">
             @error('tanggal')
             <small class="text-danger">{{ $message }}</small>
             @enderror
@@ -41,7 +41,7 @@
             }">
 
             <div class="mb-2">
-              <label class="form-label">Masuk</label>
+              <label for="masuk" class="form-label">Masuk</label>
               <input type="time" 
                 wire:model.defer="masuk" 
                 x-model="masuk"
@@ -53,11 +53,12 @@
             </div>
 
             <div class="mb-2">
-              <label class="form-label">Keterangan Masuk</label>
+              <label for="keteranganMasuk" class="form-label">Keterangan Masuk</label>
               <input type="text"
                 wire:model.defer="keteranganMasuk"
                 class="form-control @error('keteranganMasuk') is-invalid @enderror"
                 :disabled="!masuk"
+                id="keteranganMasuk"
                 autocomplete="off"
                 placeholder="Alasan input jam masuk">
 
@@ -67,7 +68,7 @@
             </div>
 
             <div class="mb-2">
-              <label class="form-label">Pulang</label>
+              <label for="pulang" class="form-label">Pulang</label>
               <input type="time" 
                 wire:model.defer="pulang" 
                 x-model="pulang"
@@ -79,11 +80,12 @@
             </div>
 
             <div class="mb-2">
-              <label class="form-label">Keterangan Pulang</label>
+              <label for="keteranganPulang" class="form-label">Keterangan Pulang</label>
               <input type="text"
                 wire:model.defer="keteranganPulang"
                 class="form-control @error('keteranganPulang') is-invalid @enderror"
                 :disabled="!pulang"
+                id="keteranganPulang"
                 autocomplete="off"
                 placeholder="Alasan input jam pulang">
 

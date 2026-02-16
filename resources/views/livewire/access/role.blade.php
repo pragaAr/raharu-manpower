@@ -10,6 +10,7 @@
       <div class="mb-3">
         <input type="text" class="form-control"
           placeholder="Cari role..."
+          id="search-role"
           wire:model.live.debounce.300ms="search">
       </div>
 

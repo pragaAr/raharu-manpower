@@ -8,12 +8,12 @@
       <div class="modal-body">
         <form wire:submit.prevent="save">
           <div class="mb-3">
-            <label class="form-label">Nama Role</label>
-            <input type="text" wire:model.live.debounce.300ms="name" class="form-control @error('name') is-invalid @enderror" placeholder="Contoh: Manager" autofocus autocomplete="off">
+            <label for="name" class="form-label">Nama Role</label>
+            <input type="text" wire:model.live.debounce.300ms="name" class="form-control @error('name') is-invalid @enderror" placeholder="Contoh: Manager" id="name" autofocus autocomplete="off">
             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
           </div>
           <div class="mb-3">
-            <label class="form-label">Izin Akses</label>
+            <div class="form-label">Izin Akses</div>
             <div class="row">
               @foreach($groupedPermissions as $module => $items)
               <div class="col-12 mb-3">
