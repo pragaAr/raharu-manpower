@@ -3,6 +3,7 @@
 namespace App\Livewire\Master;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -103,10 +104,10 @@ class Lokasi extends Component
   {
     $this->validate(
       [
-        'nama'  => ['required', 'min:3', \Illuminate\Validation\Rule::unique('lokasi', 'nama')->ignore($this->lokasiId)],
-        'kode'  => ['required', 'min:1', \Illuminate\Validation\Rule::unique('lokasi', 'kode')->ignore($this->lokasiId)],
-        'lat'   => ['required', \Illuminate\Validation\Rule::unique('lokasi', 'lat')->ignore($this->lokasiId)],
-        'lng'   => ['required', \Illuminate\Validation\Rule::unique('lokasi', 'lng')->ignore($this->lokasiId)],
+        'nama'  => ['required', 'min:3', Rule::unique('lokasi', 'nama')->ignore($this->lokasiId)],
+        'kode'  => ['required', 'min:1', Rule::unique('lokasi', 'kode')->ignore($this->lokasiId)],
+        'lat'   => ['required', Rule::unique('lokasi', 'lat')->ignore($this->lokasiId)],
+        'lng'   => ['required', Rule::unique('lokasi', 'lng')->ignore($this->lokasiId)],
       ],
       [
         'nama.required' => 'Nama Lokasi wajib diisi.',

@@ -1,5 +1,5 @@
 <div wire:ignore.self class="modal fade" id="addEditModal" tabindex="-1" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm">
+  <div class="modal-dialog modal-sm modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header">
@@ -10,20 +10,44 @@
       </div>
 
       <div class="modal-body">
-        <form wire:submit.prevent="save">
+        <form id="absensi-form" wire:submit.prevent="save">
           <div class="mb-2">
-            <label for="karyawan-select" class="form-label">Karyawan</label>
-            <input type="hidden" id="karyawan-hidden" wire:model.defer="karyawanId">
+            <label for="absensi-karyawanSelect" class="form-label">Karyawan</label>
+            <input type="hidden" id="absensi-karyawanHidden" wire:model.defer="karyawanId">
             <div wire:ignore>
-              <select id="karyawan-select" class="form-select">
+              <select id="absensi-karyawanSelect" class="form-select">
                 @foreach ($karyawans as $karyawan)
                 <option value="{{ $karyawan->id }}">{{ strtoupper($karyawan->nik) }} - {{ strtoupper($karyawan->nama) }}</option>
                 @endforeach
               </select>
             </div>
-            <div id="karyawan-error">
+            <div id="absensi-karyawanError">
               @error('karyawanId') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
+          </div>
+
+          <div class="mb-2">
+            <div class="form-label">Status</div>
+
+            <div class="d-flex justify-content-evenly">
+              @foreach($statusOptions as $option)
+                <div class="form-check form-check-inline" style="margin-right:2px;">
+                  <input 
+                      class="form-check-input"
+                      type="radio"
+                      id="status_{{ $option }}"
+                      wire:model="status"
+                      value="{{ $option }}">
+                  <label class="form-check-label text-capitalize"for="status_{{ $option }}" style="margin-left: -6px;">
+                    {{ $option }}
+                  </label>
+                </div>
+              @endforeach
+            </div>
+
+            @error('status')
+              <small class="text-danger">{{ $message }}</small>
+            @enderror
           </div>
 
           <div class="mb-2">
@@ -36,17 +60,40 @@
 
           <div 
             x-data="{
-                masuk: @entangle('masuk').live,
-                pulang: @entangle('pulang').live
+              status: @entangle('status').live,
+              masuk: @entangle('masuk').live,
+              pulang: @entangle('pulang').live,
+
+              init() {
+                this.$watch('status', value => {
+                  if (value !== 'hadir') {
+                    this.masuk = null
+                    this.pulang = null
+                  }
+                })
+              }
             }">
 
             <div class="mb-2">
               <label for="masuk" class="form-label">Masuk</label>
-              <input type="time" 
-                wire:model.defer="masuk" 
-                x-model="masuk"
-                class="form-control text-uppercase @error('masuk') is-invalid @enderror" 
-                id="masuk" autocomplete="off" placeholder="Jam masuk">
+
+              <div class="position-relative">
+                <input type="time" 
+                  wire:model.defer="masuk" 
+                  x-model="masuk"
+                  :disabled="status !== 'hadir'"
+                  class="form-control @error('masuk') is-invalid @enderror" 
+                  id="masuk" 
+                  autocomplete="off">
+
+                <button type="button" 
+                  x-show="masuk" 
+                  x-on:click="masuk = null" 
+                  class="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-5"
+                  style="z-index: 10; border: none; box-shadow: none; background: transparent;">
+                    Clear
+                </button>
+              </div>
               @error('masuk')
               <small class="text-danger">{{ $message }}</small>
               @enderror
@@ -57,8 +104,8 @@
               <input type="text"
                 wire:model.defer="keteranganMasuk"
                 class="form-control @error('keteranganMasuk') is-invalid @enderror"
-                :disabled="!masuk"
                 id="keteranganMasuk"
+                :disabled="status !== 'hadir'"
                 autocomplete="off"
                 placeholder="Alasan input jam masuk">
 
@@ -69,11 +116,24 @@
 
             <div class="mb-2">
               <label for="pulang" class="form-label">Pulang</label>
-              <input type="time" 
-                wire:model.defer="pulang" 
-                x-model="pulang"
-                class="form-control text-uppercase @error('pulang') is-invalid @enderror" 
-                id="pulang" autocomplete="off" placeholder="Jam pulang">
+
+              <div class="position-relative">
+                <input type="time" 
+                  wire:model.defer="pulang" 
+                  x-model="pulang"
+                  :disabled="status !== 'hadir'"
+                  class="form-control @error('pulang') is-invalid @enderror" 
+                  id="pulang" 
+                  autocomplete="off">
+
+                <button type="button" 
+                  x-show="pulang" 
+                  x-on:click="pulang = null" 
+                  class="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-5"
+                  style="z-index: 10; border: none; box-shadow: none; background: transparent;">
+                    Clear
+                </button>
+              </div>
               @error('pulang')
               <small class="text-danger">{{ $message }}</small>
               @enderror
@@ -84,7 +144,7 @@
               <input type="text"
                 wire:model.defer="keteranganPulang"
                 class="form-control @error('keteranganPulang') is-invalid @enderror"
-                :disabled="!pulang"
+                :disabled="status !== 'hadir' || !pulang"
                 id="keteranganPulang"
                 autocomplete="off"
                 placeholder="Alasan input jam pulang">

@@ -188,7 +188,7 @@ class Create extends Component
       ]);
 
       $this->resetForm();
-      $this->dispatch('resetSelect');
+      $this->dispatch('reset-elect');
       $this->dispatch('focusFirstInput');
       $this->dispatch('alert', [
         'type'    => 'success',

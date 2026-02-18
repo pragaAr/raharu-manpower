@@ -15,7 +15,7 @@
           statusAkhir: @entangle('statusAkhir')
         }"
         >
-        <form wire:submit.prevent="updateStatus" class="row g-2">
+        <form class="row g-2" id="change-status-form" wire:submit.prevent="updateStatus">
 
           <div class="col-md-12">
             <div class="form-label">Status</div>
@@ -74,18 +74,22 @@
 
           <div class="col-md-12"
             x-show="statusAkhir === 'nonaktif' && selectedStatus === 'aktif'"
-            x-cloak>
+            x-cloak
+            x-effect="
+              if (statusAkhir === 'nonaktif' && selectedStatus === 'aktif') {
+                $nextTick(() => {
+                  window.initStatusTomSelect?.()
+                })
+              }
+            ">
             <small class="text-muted d-block">
               Karyawan akan aktif kembali dengan status probation.
             </small>
 
-            <label for="lokasi-select" class="form-label">Penempatan</label>
-
-            {{-- bridge ke Livewire --}}
-            <input type="hidden" id="lokasi-hidden" wire:model="lokasiId">
-
+            <label for="status-lokasiSelect" class="form-label">Penempatan</label>
+            <input type="hidden" id="status-lokasiHidden" wire:model="lokasiId">
             <div wire:ignore>
-              <select id="lokasi-select" class="form-select">
+              <select id="status-lokasiSelect" class="form-select">
                 @foreach ($lokasis as $lokasi)
                   <option value="{{ $lokasi->id }}">
                     {{ strtoupper($lokasi->nama) }}

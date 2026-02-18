@@ -7,9 +7,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Permission\Traits\HasRoles;
 
+use Laravel\Sanctum\HasApiTokens;
+
 class User extends Authenticatable
 {
-  use HasFactory, Notifiable, HasRoles;
+  use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
   protected $table = 'user';
 
@@ -41,6 +43,6 @@ class User extends Authenticatable
 
   public function isAdministrator(): bool
   {
-    return $this->hasRole('Administrator') || $this->hasRole('Superuser');
+    return $this->hasRole('Superuser') || $this->hasRole('Administrator');
   }
 }

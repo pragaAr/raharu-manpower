@@ -300,7 +300,7 @@ class Mutasi extends Component
       ]);
 
       $this->resetForm();
-      $this->dispatch('resetSelect');
+      $this->dispatch('reset-select');
       $this->loadKaryawanData();
       $this->dispatch('refresh-tomselect', [
         'karyawans' => $this->karyawans,

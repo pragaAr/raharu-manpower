@@ -156,12 +156,22 @@
     <div class="card-body border-bottom py-3">
 
       @if($displayFilters)
+      <div class="d-flex align-items-baseline justify-content-between mb-2">
         <div class="text-muted text-capitalize mb-2">
           filter on | 
           @foreach($displayFilters as $label => $value)
             <small> {{ $label }}: {{ $value }}</small>@if(!$loop->last),@endif
           @endforeach
         </div>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+          wire:click.prevent="resetFilter"
+          wire:loading.attr="disabled"
+          wire:target="resetFilter">
+          Reset Filter
+          <span wire:loading wire:target="resetFilter" class="spinner-border spinner-border-sm ms-2"></span>
+        </button>
+      </div>
       @endif
 
       <div class="mb-3">
@@ -327,106 +337,93 @@
   </div>
 
   {{-- ===================== MODAL ===================== --}}
-  <livewire:karyawan.edit />
-  <livewire:karyawan.status />
+  <livewire:karyawan.modal.edit />
+  <livewire:karyawan.modal.status />
   @include('components.modal.confirm')
-  @include('livewire.karyawan.filter')
-  @include('livewire.karyawan.export')
+  @include('livewire.karyawan.modal.filter')
+  @include('livewire.karyawan.modal.export')
 
 </div>
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
-    const kategoriFilterSelectEl = document.getElementById('kategori-filter-select')
-    const lokasiFilterSelectEl = document.getElementById('lokasi-filter-select')
-    const lokasiSelectEl = document.getElementById('lokasi-select')
-    const divisiFilterSelectEl = document.getElementById('divisi-filter-select')
-
-    const initTomSelect = (selectEl, hiddenInputId, placeholder) => {
-      if (!selectEl) return
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy();
-      }
-
-      const hiddenInput = document.getElementById(hiddenInputId)
-      
-      const ts = new TomSelect(selectEl, {
-        allowEmptyOption: true,
-        placeholder: placeholder,
-        items: [], // Tidak ada item terpilih secara default, hanya tampilkan placeholder
-        onChange(value) {
-          // Set hidden input value dan trigger input event untuk Livewire
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-        }
-      })
-
-      // Prevent Enter key from submitting form
-      ts.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
-
-      return ts
-    }
-
-    initTomSelect(kategoriFilterSelectEl, 'kategori-filter-hidden', 'Pilih Kategori..')
-    initTomSelect(lokasiFilterSelectEl, 'lokasi-filter-hidden', 'Pilih Penempatan..')
-    initTomSelect(divisiFilterSelectEl, 'divisi-filter-hidden', 'Pilih Divisi..')
-
-    Livewire.on('openStatus', () => {
-      initTomSelect(lokasiSelectEl, 'lokasi-hidden', 'Pilih Penempatan..')
-    })
-    
     const modalEdit = document.getElementById('editModal');
     const modalConfirm = document.getElementById('confirmModal');
     const modalFilter = document.getElementById('filterModal');
     const modalExport = document.getElementById('exportModal');
     const modalStatus = document.getElementById('statusModal');
 
-    Livewire.on('openEdit', () => toggleModal('editModal', 'show'));
-    Livewire.on('closeEdit', () => toggleModal('editModal', 'hide'));
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
-    Livewire.on('openFilter', () => toggleModal('filterModal', 'show'));
-    Livewire.on('closeFilter', () => toggleModal('filterModal', 'hide'));
-
-    Livewire.on('openExport', () => toggleModal('exportModal', 'show'));
-    Livewire.on('closeExport', () => {
-      toggleModal('exportModal', 'hide');
-      toggleModal('filterModal', 'hide');
-    });
-
-    Livewire.on('openStatus', () =>  toggleModal('statusModal', 'show'));
-    Livewire.on('closeStatus', () => toggleModal('statusModal', 'hide'));
-
-    const clearHidden = (id) => {
-      const el = document.getElementById(id)
-      if (el) el.value = ''
-    }
-
-    Livewire.on('reset-tomselect', () => {
-      kategoriFilterSelectEl?.tomselect?.clear()
-      lokasiFilterSelectEl?.tomselect?.clear()
-      divisiFilterSelectEl?.tomselect?.clear()
-       
-      clearHidden('kategori-filter-hidden')
-      clearHidden('lokasi-filter-hidden')
-      clearHidden('divisi-filter-hidden')
-    });
-
-    const dateFields = ['tgl-masuk-start', 'tgl-masuk-end', 'tglMulai', 'tglSelesai', 'tglKeluar', 'tglEfektif', 'tglLahir'];
-    initDatePickers(dateFields);
-
-    Livewire.on('open-pdf', () => window.open('/karyawan/export-pdf', '_blank'));
-
     blurActiveElementOnModalHide([modalEdit, modalConfirm, modalFilter, modalExport, modalStatus]);
+
+    window.__plugins.filterKaryawan =
+      createTomSelectGroup('#filter-karyawan-form', [
+        {
+          selectId: 'filter-kategoriSelect',
+          errorId: null,
+          hiddenInputId: 'filter-kategoriHidden',
+          placeholder: 'Pilih Kategori..'
+        },
+        {
+          selectId: 'filter-lokasiSelect',
+          errorId: null,
+          hiddenInputId: 'filter-lokasiHidden',
+          placeholder: 'Pilih Penempatan..'
+        },
+        {
+          selectId: 'filter-divisiSelect',
+          errorId: null,
+          hiddenInputId: 'filter-divisiHidden',
+          placeholder: 'Pilih Divisi..'
+        }
+      ])
   })
 
+  window.initStatusTomSelect = () => {
+    if (!window.__plugins.statusKaryawan) {
+      window.__plugins.statusKaryawan =
+        createTomSelectGroup('#change-status-form', [
+         { 
+          selectId: 'status-lokasiSelect', 
+          errorId: null, 
+          hiddenInputId: 'status-lokasiHidden', 
+          placeholder: 'Pilih Lokasi..' }
+      ])
+    }
+  }
+
+  Livewire.on('openEdit', () => toggleModal('editModal', 'show'));
+  Livewire.on('closeEdit', () => toggleModal('editModal', 'hide'));
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  Livewire.on('openFilter', () => toggleModal('filterModal', 'show'));
+  Livewire.on('closeFilter', () => toggleModal('filterModal', 'hide'));
+
+  Livewire.on('openExport', () => toggleModal('exportModal', 'show'));
+  Livewire.on('closeExport', () => {
+    toggleModal('exportModal', 'hide');
+    toggleModal('filterModal', 'hide');
+  });
+
+  Livewire.on('openStatus', () => toggleModal('statusModal', 'show'))
+  Livewire.on('closeStatus', () => toggleModal('statusModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.filterKaryawan?.destroy()
+    delete window.__plugins.filterKaryawan
+
+    window.__plugins.statusKaryawan?.destroy()
+    delete window.__plugins.statusKaryawan
+  })
+
+  Livewire.on('reset-select', () => {
+    window.__plugins.filterKaryawan?.reset()
+  })
+
+  Livewire.on('open-pdf', () => window.open('/karyawan/export-pdf', '_blank'));
 </script>
 @endpush

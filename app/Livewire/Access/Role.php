@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\{
   Log
 };
 
+use Illuminate\Validation\Rule;
+
 use Livewire\{
   Component,
   WithPagination
@@ -176,7 +178,7 @@ class Role extends Component
 
     $this->validate(
       [
-        'name' => ['required', 'min:3', \Illuminate\Validation\Rule::unique('roles', 'name')->ignore($this->roleId)],
+        'name' => ['required', 'min:3', Rule::unique('roles', 'name')->ignore($this->roleId)],
       ],
       [
         'name.required' => 'Nama Role wajib diisi.',

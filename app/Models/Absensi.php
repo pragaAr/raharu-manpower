@@ -9,11 +9,18 @@ class Absensi extends Model
 {
   use HasFactory;
 
+  const STATUS_HADIR  = 'hadir';
+  const STATUS_IZIN   = 'izin';
+  const STATUS_SAKIT  = 'sakit';
+  const STATUS_ALPHA  = 'alpha';
+  const STATUS_CUTI   = 'cuti';
+
   protected $table = 'absensi';
 
   protected $fillable = [
     'karyawan_id',
     'tanggal',
+    'status',
     'jam_masuk',
     'jam_pulang',
   ];
@@ -37,5 +44,16 @@ class Absensi extends Model
   public function karyawan()
   {
     return $this->belongsTo(Karyawan::class);
+  }
+
+  public static function statusList(): array
+  {
+    return [
+      self::STATUS_HADIR,
+      self::STATUS_IZIN,
+      self::STATUS_SAKIT,
+      self::STATUS_ALPHA,
+      self::STATUS_CUTI,
+    ];
   }
 }

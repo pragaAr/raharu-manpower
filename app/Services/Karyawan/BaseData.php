@@ -50,7 +50,7 @@ class BaseData
       )
       ->when(
         ($filters['lokasi_id'] ?? null)
-          && auth()->user()->hasRole('Administrator'),
+          && auth()->user()->hasRole(['Superuser', 'Administrator']),
         function ($q, $v) use (&$applied) {
           $q->where('lokasi_id', $v);
           $applied['Lokasi'] = Lokasi::find($v)?->nama;

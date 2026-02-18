@@ -3,6 +3,7 @@
 namespace App\Livewire\Absensi;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -26,6 +27,7 @@ class Index extends Component
   public $absenId;
   public $karyawanId;
   public $tanggal;
+  public $status = 'hadir';
   public $masuk;
   public $pulang;
   public $source = 'manual';
@@ -35,6 +37,7 @@ class Index extends Component
   public $deleteId  = null;
 
   public $karyawans = [];
+  public $statusOptions = [];
 
   public $search = '';
 
@@ -53,11 +56,21 @@ class Index extends Component
       ->select('id', 'nik', 'nama')
       ->orderBy('id')
       ->get();
+
+    $this->statusOptions = Absensi::statusList();
   }
 
   public function updatedSearch()
   {
     $this->resetPage();
+  }
+
+  public function updatedStatus($value)
+  {
+    if ($value !== 'hadir') {
+      $this->jam_masuk = null;
+      $this->jam_pulang = null;
+    }
   }
 
   public function render()
@@ -68,14 +81,15 @@ class Index extends Component
     ])
       ->when($this->search, function ($q) {
         $q->where(function ($sub) {
-          $sub->where('tanggal', 'like', "%{$this->search}%")
+          $sub->where('tanggal', 'like', "{$this->search}%")
             ->orWhereHas('karyawan', function ($d) {
-              $d->where('nik', 'like', "%{$this->search}%")
-                ->orWhere('nama', 'like', "%{$this->search}%");
+              $d->where('nik', 'like', "{$this->search}%")
+                ->orWhere('nama', 'like', "{$this->search}%");
             })
             ->orWhereHas('lastLog', function ($l) {
-              $l->where('source', 'like', "%{$this->search}%")
-                ->orWhere('keterangan', 'like', "%{$this->search}%");
+              $l->where('jenis', 'like', "{$this->search}%")
+                ->orWhere('source', 'like', "{$this->search}%")
+                ->orWhere('keterangan', 'like', "{$this->search}%");
             });
         });
       })
@@ -132,6 +146,7 @@ class Index extends Component
 
     $this->karyawanId = $absensi->karyawan_id;
     $this->tanggal    = $absensi->tanggal?->format('Y-m-d');
+    $this->status     = $absensi->status;
     $this->masuk      = $absensi->jam_masuk?->format('H:i');
     $this->pulang     = $absensi->jam_pulang?->format('H:i');
 
@@ -150,7 +165,8 @@ class Index extends Component
       [
         'karyawanId'        => ['required', 'exists:karyawan,id'],
         'tanggal'           => ['required', 'date'],
-        'masuk'             => ['nullable', 'date_format:H:i'],
+        'status'            => ['required', Rule::in(Absensi::statusList())],
+        'masuk'             => [Rule::requiredIf($this->status === 'hadir'), 'nullable', 'date_format:H:i'],
         'keteranganMasuk'   => ['required_with:masuk'],
         'pulang'            => ['nullable', 'date_format:H:i'],
         'keteranganPulang'  => ['required_with:pulang'],
@@ -158,6 +174,7 @@ class Index extends Component
       [
         'karyawanId.required' => 'Karyawan wajib dipilih.',
         'tanggal.required'    => 'Tanggal wajib diisi.',
+        'masuk.required'      => 'Jam masuk wajib diisi.',
         'keteranganMasuk.required_with'  => 'Keterangan masuk wajib diisi jika jam masuk diisi.',
         'keteranganPulang.required_with' => 'Keterangan pulang wajib diisi jika jam pulang diisi.',
       ]
@@ -168,8 +185,8 @@ class Index extends Component
       return;
     }
 
-    if (!$this->masuk && !$this->pulang) {
-      $this->addError('masuk', 'Minimal isi jam masuk atau jam pulang.');
+    if (!$this->status) {
+      $this->addError('masuk', 'Minimal isi status kedatangan');
       return;
     }
 
@@ -195,6 +212,7 @@ class Index extends Component
         [
           'karyawan_id'       => $this->karyawanId,
           'tanggal'           => $this->tanggal,
+          'status'            => $this->status,
           'jam_masuk'         => $this->masuk,
           'jam_pulang'        => $this->pulang,
           'keterangan_masuk'  => $this->keteranganMasuk,
@@ -208,6 +226,7 @@ class Index extends Component
       ]);
 
       $this->resetForm();
+      $this->dispatch('reset-select');
       $this->dispatch('closeModal');
     } catch (\Throwable $e) {
       AbsensiLogger::error('Create absensi gagal', [
@@ -246,6 +265,7 @@ class Index extends Component
         [
           'karyawan_id'       => $this->karyawanId,
           'tanggal'           => $this->tanggal,
+          'status'            => $this->status,
           'jam_masuk'         => $this->masuk,
           'jam_pulang'        => $this->pulang,
           'keterangan_masuk'  => $this->keteranganMasuk,

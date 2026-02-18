@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Karyawan;
+namespace App\Livewire\Karyawan\Modal;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -113,7 +113,7 @@ class Edit extends Component
         ]);
 
         $this->dispatch('closeEdit');
-        $this->dispatch('karyawan-updated')->to(Index::class);
+        $this->dispatch('karyawan-updated')->to(\App\Livewire\Karyawan\Index::class);
       } catch (\Exception $e) {
         AuditLogger::error('Edit karyawan gagal', [
           'karyawan_id' => $this->karyawanId,

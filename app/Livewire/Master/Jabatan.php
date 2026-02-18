@@ -3,6 +3,7 @@
 namespace App\Livewire\Master;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -115,7 +116,7 @@ class Jabatan extends Component
     $this->validate(
       [
         'unit_id' => ['required'],
-        'nama' => ['required', 'min:3', \Illuminate\Validation\Rule::unique('jabatan', 'nama')->where(fn($q) => $q->where('unit_id', $this->unit_id))->ignore($this->jabatanId)],
+        'nama' => ['required', 'min:3', Rule::unique('jabatan', 'nama')->where(fn($q) => $q->where('unit_id', $this->unit_id))->ignore($this->jabatanId)],
       ],
       [
         'unit_id.required'  => 'Unit wajib dipilih.',

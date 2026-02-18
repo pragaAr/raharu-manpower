@@ -44,7 +44,7 @@ class Renewal extends Component
     $this->karyawans = Karyawan::kontrakAkanHabis()
       ->with('kontrakAktif')
       ->orderBy('nik')
-      ->get();
+      ->get(['id', 'nik', 'nama']);
   }
 
   public function mount()
@@ -160,7 +160,7 @@ class Renewal extends Component
       ]);
 
       $this->resetForm();
-      $this->dispatch('resetSelect');
+      $this->dispatch('reset-select');
       $this->loadKaryawanData();
       $this->dispatch('refresh-tomselect', [
         'karyawans' => $this->karyawans,

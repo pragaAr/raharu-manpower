@@ -68,8 +68,6 @@ class Index extends Component
     'tgl_masuk_end'   => null,
   ];
 
-  public $filters = [];
-
   protected $queryString = [
     'search'    => ['except' => '', 'as' => 's'],
     'status'    => ['except' => null],
@@ -89,51 +87,41 @@ class Index extends Component
 
     $allowedStatus = ['aktif', 'nonaktif', 'vakum'];
 
-    if (in_array($this->status, $allowedStatus, true)) {
-      if ($this->status !== 'aktif') {
-        $this->draft['status'] = $this->status;
-      }
-    } else {
+    if (! in_array($this->status, $allowedStatus, true)) {
       $this->status = null;
     }
 
-    if ($this->kategori && Kategori::whereKey($this->kategori)->exists()) {
-      $this->draft['kategori_id'] = $this->kategori;
-    } else {
+    if (! $this->kategori || ! Kategori::whereKey($this->kategori)->exists()) {
       $this->kategori = null;
     }
 
     if (
-      $this->lokasi &&
-      auth()->user()->hasRole('Administrator') &&
-      Lokasi::whereKey($this->lokasi)->exists()
+      ! $this->lokasi ||
+      ! auth()->user()->hasRole(['Superuser', 'Administrator']) ||
+      ! Lokasi::whereKey($this->lokasi)->exists()
     ) {
-      $this->draft['lokasi_id'] = $this->lokasi;
-    } else {
       $this->lokasi = null;
     }
 
-    if ($this->divisi && Divisi::whereKey($this->divisi)->exists()) {
-      $this->draft['divisi_id'] = $this->divisi;
-    } else {
+    if (! $this->divisi || ! Divisi::whereKey($this->divisi)->exists()) {
       $this->divisi = null;
     }
 
     try {
-      if ($this->dari) {
-        $this->draft['tgl_masuk_start'] =
-          \Carbon\Carbon::parse($this->dari)->toDateString();
-      }
-
-      if ($this->sampai) {
-        $this->draft['tgl_masuk_end'] =
-          \Carbon\Carbon::parse($this->sampai)->toDateString();
-      }
+      $this->dari   = $this->dari ? \Carbon\Carbon::parse($this->dari)->toDateString() : null;
+      $this->sampai = $this->sampai ? \Carbon\Carbon::parse($this->sampai)->toDateString() : null;
     } catch (\Exception $e) {
       $this->dari = $this->sampai = null;
     }
 
-    $this->filters = array_filter($this->draft);
+    $this->draft = [
+      'status'          => $this->status ?? 'aktif',
+      'kategori_id'     => $this->kategori,
+      'lokasi_id'       => $this->lokasi,
+      'divisi_id'       => $this->divisi,
+      'tgl_masuk_start' => $this->dari,
+      'tgl_masuk_end'   => $this->sampai,
+    ];
   }
 
   #[On('setKategori')]
@@ -156,14 +144,15 @@ class Index extends Component
 
   public function filter()
   {
-    $this->filters  = array_filter($this->draft);
-    $this->status   = ($this->filters['status'] ?? 'aktif') === 'aktif' ? null : $this->filters['status'];
+    $this->status   = $this->draft['status'] === 'aktif'
+      ? null
+      : $this->draft['status'];
 
-    $this->kategori = $this->filters['kategori_id'] ?? null;
-    $this->lokasi   = $this->filters['lokasi_id'] ?? null;
-    $this->divisi   = $this->filters['divisi_id'] ?? null;
-    $this->dari     = $this->filters['tgl_masuk_start'] ?? null;
-    $this->sampai   = $this->filters['tgl_masuk_end'] ?? null;
+    $this->kategori = $this->draft['kategori_id'];
+    $this->lokasi   = $this->draft['lokasi_id'];
+    $this->divisi   = $this->draft['divisi_id'];
+    $this->dari     = $this->draft['tgl_masuk_start'];
+    $this->sampai   = $this->draft['tgl_masuk_end'];
 
     $this->dispatch('closeFilter');
     $this->resetPage();
@@ -171,20 +160,25 @@ class Index extends Component
 
   public function hasActiveFilters(): bool
   {
-    if (empty($this->filters)) {
-      return false;
-    }
+    $filters = $this->filters;
 
-    return ($this->filters['kategori_id'] ?? null)
-      || ($this->filters['lokasi_id'] ?? null)
-      || ($this->filters['divisi_id'] ?? null)
-      || (($this->filters['status'] ?? 'aktif') !== 'aktif')
-      || ($this->filters['tgl_masuk_start'] ?? null)
-      || ($this->filters['tgl_masuk_end'] ?? null);
+    return ($filters['kategori_id'] ?? null)
+      || ($filters['lokasi_id'] ?? null)
+      || ($filters['divisi_id'] ?? null)
+      || (($filters['status'] ?? 'aktif') !== 'aktif')
+      || ($filters['tgl_masuk_start'] ?? null)
+      || ($filters['tgl_masuk_end'] ?? null);
   }
 
   public function resetFilter()
   {
+    $this->status   = null;
+    $this->kategori = null;
+    $this->lokasi   = null;
+    $this->divisi   = null;
+    $this->dari     = null;
+    $this->sampai   = null;
+
     $this->draft = [
       'status'          => 'aktif',
       'kategori_id'     => null,
@@ -194,16 +188,7 @@ class Index extends Component
       'tgl_masuk_end'   => null,
     ];
 
-    $this->filters = [];
-
-    $this->kategori = null;
-    $this->lokasi   = null;
-    $this->divisi   = null;
-    $this->dari     = null;
-    $this->sampai   = null;
-    $this->status   = null;
-
-    $this->dispatch('reset-tomselect');
+    $this->dispatch('reset-select');
     $this->dispatch('closeFilter');
 
     $this->resetPage();
@@ -222,6 +207,18 @@ class Index extends Component
     if (blank($value)) {
       $this->setPage($this->lastPage);
     }
+  }
+
+  public function getFiltersProperty(): array
+  {
+    return array_filter([
+      'status'          => $this->status ?? 'aktif',
+      'kategori_id'     => $this->kategori,
+      'lokasi_id'       => $this->lokasi,
+      'divisi_id'       => $this->divisi,
+      'tgl_masuk_start' => $this->dari,
+      'tgl_masuk_end'   => $this->sampai,
+    ]);
   }
 
   public function render(BaseData $service)

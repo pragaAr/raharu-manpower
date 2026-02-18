@@ -3,6 +3,7 @@
 namespace App\Livewire\Master;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -99,8 +100,8 @@ class Kategori extends Component
   {
     $this->validate(
       [
-        'nama'        => ['required', 'min:3', \Illuminate\Validation\Rule::unique('kategori', 'nama')->ignore($this->kategoriId)],
-        'keterangan'  => ['required', 'min:6', \Illuminate\Validation\Rule::unique('kategori', 'keterangan')->ignore($this->kategoriId)],
+        'nama'        => ['required', 'min:3', Rule::unique('kategori', 'nama')->ignore($this->kategoriId)],
+        'keterangan'  => ['required', 'min:6', Rule::unique('kategori', 'keterangan')->ignore($this->kategoriId)],
       ],
       [
         'nama.required'       => 'Nama Kategori wajib diisi.',

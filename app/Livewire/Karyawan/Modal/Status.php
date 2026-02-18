@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Karyawan;
+namespace App\Livewire\Karyawan\Modal;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;

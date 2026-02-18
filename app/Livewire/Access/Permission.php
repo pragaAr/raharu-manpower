@@ -3,6 +3,7 @@
 namespace App\Livewire\Access;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -99,8 +100,8 @@ class Permission extends Component
   {
     $this->validate(
       [
-        'name'  => ['required', 'min:3', \Illuminate\Validation\Rule::unique('permissions', 'name')->ignore($this->permissionId)],
-        'label' => ['required', 'min:6', \Illuminate\Validation\Rule::unique('permissions', 'label')->ignore($this->permissionId)],
+        'name'  => ['required', 'min:3', Rule::unique('permissions', 'name')->ignore($this->permissionId)],
+        'label' => ['required', 'min:6', Rule::unique('permissions', 'label')->ignore($this->permissionId)],
       ],
       [
         'name.required'   => 'Nama Akses wajib diisi.',

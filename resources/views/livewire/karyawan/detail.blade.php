@@ -69,6 +69,6 @@
     </div>
   </div>
 
-  @include('livewire.karyawan.image')
+  @include('livewire.karyawan.modal.image')
 
 </div>

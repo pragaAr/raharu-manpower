@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\{
   Log
 };
 
+use Illuminate\Validation\Rule;
+
 use Livewire\{
   Component,
   WithPagination
@@ -223,7 +225,7 @@ class User extends Component
   {
     $this->validate(
       [
-        'username'    => ['required', 'min:3', \Illuminate\Validation\Rule::unique('user', 'username')->ignore($this->userId)],
+        'username'    => ['required', 'min:3', Rule::unique('user', 'username')->ignore($this->userId)],
         'role_id'     => ['required'],
         'karyawan_id' => ['required'],
       ],

@@ -8,7 +8,7 @@
       <div class="row row-deck row-cards">
 
         <div class="col-12">
-          <form class="card" wire:submit.prevent="save">
+          <form class="card" id="create-form" wire:submit.prevent="save">
 
             <div class="card-body">
 
@@ -283,87 +283,44 @@
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
-    const dateFields = ['tglLahir', 'tglMulai', 'tglMasuk', 'tglSelesai', 'tglPenetapan'];
-    initDatePickers(dateFields);
-
-    const kategoriSelectEl = document.getElementById('kategori-select')
-    const lokasiSelectEl = document.getElementById('lokasi-select')
-    const jabatanSelectEl = document.getElementById('jabatan-select')
-
-    const kategoriErrContainer = document.getElementById('kategori-error')
-    const lokasiErrContainer = document.getElementById('lokasi-error')
-    const jabatanErrContainer = document.getElementById('jabatan-error')
-
-    if (!kategoriSelectEl || !lokasiSelectEl || !jabatanSelectEl) return
-
-    const observeError = (selectEl, errEl) => {
-      if (!errEl) return
-
-      const observer = new MutationObserver(() => {
-        if (!selectEl.tomselect) return
-        selectEl.tomselect.wrapper.classList.toggle(
-          'is-invalid',
-          errEl.querySelector('small') !== null
-        )
-      })
-
-      observer.observe(errEl, {
-        childList: true,
-        subtree: true
-      })
-    }
-
-    observeError(kategoriSelectEl, kategoriErrContainer)
-    observeError(lokasiSelectEl, lokasiErrContainer)
-    observeError(jabatanSelectEl, jabatanErrContainer)
-
-    const initTomSelect = (selectEl, hiddenInputId, placeholder) => {
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy()
-      }
-
-      const hiddenInput = document.getElementById(hiddenInputId)
-      
-      const ts = new TomSelect(selectEl, {
-        allowEmptyOption: true,
-        placeholder: placeholder,
-        items: [], // Tidak ada item terpilih secara default, hanya tampilkan placeholder
-        onChange(value) {
-          // Set hidden input value dan trigger input event untuk Livewire
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
+    window.__plugins.createKaryawan =
+      createTomSelectGroup('#create-form', [
+        {
+          selectId: 'kategori-select',
+          errorId: 'kategori-error',
+          hiddenInputId: 'kategori-hidden',
+          placeholder: 'Pilih Kategori..'
+        },
+        {
+          selectId: 'lokasi-select',
+          errorId: 'lokasi-error',
+          hiddenInputId: 'lokasi-hidden',
+          placeholder: 'Pilih Penempatan..'
+        },
+        {
+          selectId: 'jabatan-select',
+          errorId: 'jabatan-error',
+          hiddenInputId: 'jabatan-hidden',
+          placeholder: 'Pilih Jabatan..'
         }
-      })
+      ])
+  })
 
-      // Prevent Enter key from submitting form
-      ts.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.createKaryawan?.destroy()
+    delete window.__plugins.createKaryawan
+  })
 
-      return ts
-    }
+  Livewire.on('reset-select', () => {
+    window.__plugins.createKaryawan?.reset()
+  })
 
-    initTomSelect(kategoriSelectEl, 'kategori-hidden', 'Pilih Kategori..')
-    initTomSelect(lokasiSelectEl, 'lokasi-hidden', 'Pilih Penempatan..')
-    initTomSelect(jabatanSelectEl, 'jabatan-hidden', 'Pilih Jabatan..')
-
-    document.addEventListener('resetSelect', () => {
-      document.querySelectorAll('select').forEach(select => {
-        if (select.tomselect) {
-          select.tomselect.clear()
-        }
-      })
-    })
-
-    Livewire.on('focusFirstInput', () => {
+  Livewire.on('focusFirstInput', () => {
       const el = document.querySelector('input[wire\\:model="nama"]');
       if (el) setTimeout(() => el.focus(), 100);
-    });
-
-  })
+  });
 </script>
 @endpush

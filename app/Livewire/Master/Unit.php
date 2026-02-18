@@ -3,6 +3,7 @@
 namespace App\Livewire\Master;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 
 use Livewire\{
   Component,
@@ -116,8 +117,8 @@ class Unit extends Component
     $this->validate(
       [
         'divisi_id' => 'required',
-        'nama' => ['required', \Illuminate\Validation\Rule::unique('unit', 'nama')->ignore($this->unitId)],
-        'kode' => ['required', \Illuminate\Validation\Rule::unique('unit', 'kode')->ignore($this->unitId)],
+        'nama' => ['required', Rule::unique('unit', 'nama')->ignore($this->unitId)],
+        'kode' => ['required', Rule::unique('unit', 'kode')->ignore($this->unitId)],
       ],
       [
         'divisi_id.required'  => 'Divisi wajib dipilih.',

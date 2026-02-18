@@ -25,7 +25,8 @@
               <th class="fs-5">Pulang</th>
               <th class="fs-5">Source</th>
               <th class="fs-5">Input Oleh</th>
-              <th class="fs-5">Keterangan</th>
+              <th class="fs-5">Ket</th>
+              <th class="fs-5">Status</th>
               @if($hasActions)
               <th class="fs-5">Aksi</th>
               @endif
@@ -41,7 +42,8 @@
               <td>{{ optional($row->jam_pulang)->format('H:i') ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->lastLog->source ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->lastLog?->inputBy?->username ?? '-' }}</td>
-              <td>{{ $row->lastLog->keterangan ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->lastLog->keterangan ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->lastLog?->jenis ?? '-'}}</td>
               @if($hasActions)
               <td>
                 <div class="btn-group" role="group" style="gap: 3px;">
@@ -60,24 +62,6 @@
                         <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
                         <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
                         <path d="M16 5l3 3" />
-                    </svg>
-                  </button>
-                  @endcan
-                  @can('absensi.detail')
-                  <button wire:click="detail({{ $row->id }})" wire:loading.attr="disabled" wire:target="detail({{ $row->id }})" title="Detail" class="btn btn-info btn-sm">
-                    <span wire:loading wire:target="detail({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
-                    <svg wire:loading.remove wire:target="detail({{ $row->id }})" xmlns="http://www.w3.org/2000/svg" 
-                      style="width: 18px; height: 18px;" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      stroke-width="2" 
-                      stroke-linecap="round" 
-                      stroke-linejoin="round" 
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-eye me-0">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
                     </svg>
                   </button>
                   @endcan
@@ -108,7 +92,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="9" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="{{ $hasActions ? 9 : 8 }}" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -130,79 +114,54 @@
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    const dateFields = ['tanggal', 'masuk', 'pulang'];
-    initDatePickers(dateFields);
-
-    const selectEl = document.getElementById('karyawan-select');
-    const errorContainer = document.getElementById('karyawan-error');
-
-    bindTomSelectModalValidation({ modalEl: modalEl, selectEl, errorEl: errorContainer});
-
-    if (selectEl) {
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy();
-      }
-
-      let karyawanSelect = new TomSelect(selectEl, {
-        create: false,
-        allowEmptyOption: true,
-        placeholder: 'Pilih Karyawan..',
-        items: [],
-        onChange(value) {
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-        }
-      })
-      
-      karyawanSelect.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
-
-      Livewire.on('openModal', (payload = {}) => {
-        toggleModal('addEditModal', 'show');
-
-        if (karyawanSelect.activeOption) {
-          karyawanSelect.setActiveOption(null)
-        }
-
-        if (payload.karyawan_id) {
-          karyawanSelect.setValue(payload.karyawan_id, true)
-        } else {
-          karyawanSelect.clear(true)
-        }
-
-        karyawanSelect.refreshOptions(false)
-      });
-
-      Livewire.on('closeModal', () => {
-        toggleModal('addEditModal', 'hide');
-        karyawanSelect.clear(true)
-
-        if (karyawanSelect.activeOption) {
-          karyawanSelect.setActiveOption(null)
-        }
-      });
-    }
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
-    document.addEventListener('resetSelect', () => {
-      document.querySelectorAll('select').forEach(select => {
-        if (select.tomselect) {
-          select.tomselect.clear()
-        }
-      })
-    });   
-
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.absensi =
+      createTomSelectGroup('#absensi-form', [
+        {
+          selectId: 'absensi-karyawanSelect',
+          errorId: 'absensi-karyawanError',
+          hiddenInputId: 'absensi-karyawanHidden',
+          placeholder: 'Pilih Karyawan..'
+        }
+      ])
+  })
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.absensi?.destroy()
+    delete window.__plugins.absensi
+  })
+
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.absensi;
+    if (!ts) return;
+
+    if (payload.karyawan_id) {
+      ts.clear('absensi-karyawanSelect');    
+      ts.setValue('absensi-karyawanSelect', payload.karyawan_id); 
+    } else {
+      ts.clear('absensi-karyawanSelect');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.karyawanSelect?.reset();
+  });
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide')); 
+
+  Livewire.on('reset-select', () => {
+    window.__plugins.absensi?.reset()
   })
 </script>
 @endpush

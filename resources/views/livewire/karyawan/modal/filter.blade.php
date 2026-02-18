@@ -10,13 +10,13 @@
       </div>
 
       <div class="modal-body">
-        <form wire:submit.prevent="filter" class="row g-2">
+        <form class="row g-2" id="filter-karyawan-form" wire:submit.prevent="filter">
 
           <div class="col-md-12 mb-2">
-            <label for="kategori-filter-select" class="form-label">Kategori</label>
-            <input type="hidden" id="kategori-filter-hidden" wire:model.defer="draft.kategori_id">
+            <label for="filter-kategoriSelect" class="form-label">Kategori</label>
+            <input type="hidden" id="filter-kategoriHidden" wire:model.defer="draft.kategori_id">
             <div wire:ignore>
-              <select id="kategori-filter-select" class="form-select">
+              <select id="filter-kategoriSelect" class="form-select">
                 @foreach ($kategoris as $kategori)
                 <option value="{{ $kategori->id }}">{{ strtoupper($kategori->nama) }}</option>
                 @endforeach
@@ -24,25 +24,25 @@
             </div>
           </div>
 
-          @role('Administrator')
+         @hasanyrole('Superuser|Administrator')
           <div class="col-md-12 mb-2">
-            <label for="lokasi-filter-select" class="form-label">Penempatan</label>
-            <input type="hidden" id="lokasi-filter-hidden" wire:model.defer="draft.lokasi_id">
+            <label for="filter-lokasiSelect" class="form-label">Penempatan</label>
+            <input type="hidden" id="filter-lokasiHidden" wire:model.defer="draft.lokasi_id">
             <div wire:ignore>
-              <select id="lokasi-filter-select" class="form-select">
+              <select id="filter-lokasiSelect" class="form-select">
                 @foreach ($lokasis as $lokasi)
                 <option value="{{ $lokasi->id }}">{{ strtoupper($lokasi->nama) }}</option>
                 @endforeach
               </select>
             </div>
           </div>
-          @endrole
+          @endhasanyrole
           
           <div class="col-md-12 mb-2">
-            <label for="divisi-filter-select" class="form-label">Divisi</label>
-            <input type="hidden" id="divisi-filter-hidden" wire:model.defer="draft.divisi_id">
+            <label for="filter-divisiSelect" class="form-label">Divisi</label>
+            <input type="hidden" id="filter-divisiHidden" wire:model.defer="draft.divisi_id">
             <div wire:ignore>
-              <select id="divisi-filter-select" class="form-select">
+              <select id="filter-divisiSelect" class="form-select">
                 @foreach ($divisis as $divisi)
                 <option value="{{ $divisi->id }}">{{ strtoupper($divisi->nama) }}</option>
                 @endforeach
@@ -102,48 +102,21 @@
           </div>
 
           <div class="col-md-12 mt-3">
-            @if($this->hasActiveFilters())
-              {{-- Filter SUDAH diaplikasikan --}}
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-secondary flex-fill"
-                  wire:click.prevent="resetFilter"
-                  wire:loading.attr="disabled"
-                  wire:target="resetFilter">
-                  Reset
-                </button>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary w-50"
+                wire:loading.attr="disabled"
+                wire:target="filter">
+                Filter
+                <span wire:loading wire:target="filter" class="spinner-border spinner-border-sm ms-2"></span>
+              </button>
 
-                <button type="submit" class="btn btn-primary flex-fill"
-                  wire:loading.attr="disabled"
-                  wire:target="filter">
-                  Filter
-                  <span wire:loading wire:target="filter" class="spinner-border spinner-border-sm ms-2"></span>
-                </button>
-
-                <button type="button" class="btn btn-success flex-fill"
-                  wire:click="openExport"
-                  wire:loading.attr="disabled"
-                  wire:target="openExport">
-                  Export
-                </button>
-              </div>
-            @else
-              {{-- Belum ada filter aktif --}}
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50"
-                  wire:loading.attr="disabled"
-                  wire:target="filter">
-                  Filter
-                  <span wire:loading wire:target="filter" class="spinner-border spinner-border-sm ms-2"></span>
-                </button>
-
-                <button type="button" class="btn btn-success w-50"
-                  wire:click="openExport"
-                  wire:loading.attr="disabled"
-                  wire:target="openExport">
-                  Export
-                </button>
-              </div>
-            @endif
+              <button type="button" class="btn btn-success w-50"
+                wire:click="openExport"
+                wire:loading.attr="disabled"
+                wire:target="openExport">
+                Export
+              </button>
+            </div>
           </div>
 
         </form>

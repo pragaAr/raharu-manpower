@@ -7,22 +7,22 @@
       <div class="row row-deck row-cards">
 
         <div class="col-12">
-          <form class="card" wire:submit.prevent="save">
+          <form class="card" id="renewal-form" wire:submit.prevent="save">
 
             <div class="card-body">
               <div class="row g-3">
 
                 <div class="col-md-12 mb-2">
-                  <label for="karyawan-select" class="form-label">Karyawan</label>
-                  <input type="hidden" id="karyawan-hidden" wire:model.live="karyawanId">
+                  <label for="renewal-karyawanSelect" class="form-label">Karyawan</label>
+                  <input type="hidden" id="renewal-karyawanHidden" wire:model.live="karyawanId">
                   <div wire:ignore>
-                    <select id="karyawan-select" class="form-select">
+                    <select id="renewal-karyawanSelect" class="form-select">
                       @foreach ($karyawans as $karyawan)
                       <option value="{{ $karyawan->id }}">{{ strtoupper($karyawan->nik) }} - {{ strtoupper($karyawan->nama) }}</option>
                       @endforeach
                     </select>
                   </div>
-                  <div id="karyawan-error">
+                  <div id="renewal-karyawanError">
                     @error('karyawanId') <small class="text-danger">{{ $message }}</small> @enderror
                   </div>
                 </div>
@@ -133,88 +133,37 @@
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
-    const dateFields = ['efektif', 'tmk', 'thk'];
-    initDatePickers(dateFields);
-
-    const karyawanSelectEl = document.getElementById('karyawan-select')
-
-    const karyawanErrContainer = document.getElementById('karyawan-error')
-
-    const observeError = (selectEl, errEl) => {
-      if (!errEl) return
-
-      const observer = new MutationObserver(() => {
-        if (!selectEl.tomselect) return
-        selectEl.tomselect.wrapper.classList.toggle(
-          'is-invalid',
-          errEl.querySelector('small') !== null
-        )
-      })
-
-      observer.observe(errEl, {
-        childList: true,
-        subtree: true
-      })
-    }
-
-    observeError(karyawanSelectEl, karyawanErrContainer)
-
-    const initTomSelect = (selectEl, hiddenInputId, placeholder) => {
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy()
-      }
-
-      const ts = new TomSelect(selectEl, {
-        allowEmptyOption: true,
-        placeholder: placeholder,
-        items: [], 
-        onChange(value) {
-          const hiddenInput = document.getElementById(hiddenInputId)
-
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
+    window.__plugins.renewal =
+      createTomSelectGroup('#renewal-form', [
+        {
+          selectId: 'renewal-karyawanSelect',
+          errorId: 'renewal-karyawanError',
+          hiddenInputId: 'renewal-karyawanHidden',
+          placeholder: 'Pilih Karyawan..'
         }
-      })
+      ])
+  })
 
-      ts.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.renewal?.destroy()
+    delete window.__plugins.renewal
+  })
 
-      return ts
-    }
+  Livewire.on('reset-select', () => {
+    window.__plugins.renewal?.reset()
+  })
 
-    initTomSelect(karyawanSelectEl, 'karyawan-hidden', 'Pilih Karyawan..')
+  Livewire.on('refresh-tomselect', (data) => {
+    const karyawans = data.karyawans || data[0]?.karyawans || []
 
-    document.addEventListener('resetSelect', () => {
-      document.querySelectorAll('select').forEach(select => {
-        if (select.tomselect) {
-          select.tomselect.clear()
-        }
-      })
-    })
-
-     Livewire.on('refresh-tomselect', (data) => {
-      if (karyawanSelectEl?.tomselect) {
-        karyawanSelectEl.tomselect.destroy()
-      }
-
-      karyawanSelectEl.innerHTML = ''
-
-      const karyawans = data.karyawans || data[0]?.karyawans || []
-
-      karyawans.forEach(k => {
-        const option = document.createElement('option')
-        option.value = k.id
-        option.textContent = `${k.nik.toUpperCase()} - ${k.nama.toUpperCase()}`
-        karyawanSelectEl.appendChild(option)
-      })
-
-      initTomSelect(karyawanSelectEl, 'karyawan-hidden', 'Pilih Karyawan..')
-    })
+    window.__plugins.renewal?.refresh(
+      'renewal-karyawanSelect',
+      karyawans,
+      (k) => `${k.nik.toUpperCase()} - ${k.nama.toUpperCase()}`
+    )
   })
 </script>
 @endpush

@@ -1,11 +1,9 @@
-// Autofocus input ketika modal terbuka
 document.addEventListener("shown.bs.modal", function (event) {
     const modal = event.target;
     const input = modal.querySelector("input[autofocus]");
     if (input) input.focus();
 });
 
-// Toggle modal (Livewire friendly)
 window.toggleModal = function (modalId, action = "show") {
     const el = document.getElementById(modalId);
     if (!el) return;
@@ -14,7 +12,6 @@ window.toggleModal = function (modalId, action = "show") {
     action === "show" ? modal.show() : modal.hide();
 };
 
-// Blur active element saat modal ditutup
 window.blurActiveElementOnModalHide = function (modals) {
     if (!modals) return;
 
@@ -79,22 +76,129 @@ window.bindTomSelectModalValidation = function ({
     modalEl.addEventListener("hidden.bs.modal", cleanup);
 };
 
-function initDatePickers(ids) {
-    const targetIds = Array.isArray(ids) ? ids : [ids];
+document.addEventListener("pointerdown", function (e) {
+    if (!e.target.matches('input[type="date"], input[type="time"]')) return;
 
-    targetIds.forEach((id) => {
-        const element = document.getElementById(id);
+    const el = e.target;
 
-        if (element) {
-            element.addEventListener("click", function () {
-                if (typeof this.showPicker === "function") {
-                    try {
-                        this.showPicker();
-                    } catch (e) {
-                        console.warn("Gagal memanggil picker", e);
-                    }
-                }
-            });
+    if (typeof el.showPicker !== "function") return;
+
+    if (el.disabled || el.readOnly) return;
+
+    try {
+        el.showPicker();
+    } catch (err) {
+        console.warn("Gagal memanggil picker", err);
+    }
+});
+
+function createTomSelectGroup(rootSelector, configs) {
+    const root = document.querySelector(rootSelector);
+    if (!root) return null;
+
+    const instances = new Map();
+    const observers = [];
+
+    const observeError = (selectEl, errEl) => {
+        if (!errEl) return;
+
+        const observer = new MutationObserver(() => {
+            if (!selectEl.tomselect) return;
+
+            selectEl.tomselect.wrapper.classList.toggle(
+                "is-invalid",
+                errEl.querySelector("small") !== null,
+            );
+        });
+
+        observer.observe(errEl, { childList: true, subtree: true });
+        observers.push(observer);
+    };
+
+    const initTomSelect = (selectEl, hiddenInputId, placeholder, key) => {
+        if (selectEl.tomselect) {
+            selectEl.tomselect.destroy();
         }
+
+        const ts = new TomSelect(selectEl, {
+            allowEmptyOption: true,
+            placeholder,
+            items: [],
+            onChange(value) {
+                const hiddenInput = root.querySelector(`#${hiddenInputId}`);
+                if (!hiddenInput) return;
+
+                hiddenInput.value = value;
+                hiddenInput.dispatchEvent(
+                    new Event("input", { bubbles: true }),
+                );
+            },
+        });
+
+        instances.set(key, ts);
+    };
+
+    configs.forEach((cfg) => {
+        const selectEl = root.querySelector(`#${cfg.selectId}`);
+        const errEl = root.querySelector(`#${cfg.errorId}`);
+        if (!selectEl) return;
+
+        observeError(selectEl, errEl);
+        initTomSelect(
+            selectEl,
+            cfg.hiddenInputId,
+            cfg.placeholder,
+            cfg.selectId,
+        );
     });
+
+    return {
+        destroy() {
+            instances.forEach((ts) => ts.destroy());
+            observers.forEach((obs) => obs.disconnect());
+            instances.clear();
+        },
+
+        reset() {
+            instances.forEach((ts) => ts.clear());
+        },
+
+        refresh(selectId, options, formatter) {
+            const selectEl = root.querySelector(`#${selectId}`);
+            if (!selectEl) return;
+
+            // destroy existing
+            instances.get(selectId)?.destroy();
+            instances.delete(selectId);
+
+            // reset options
+            selectEl.innerHTML = "";
+
+            options.forEach((item) => {
+                const option = document.createElement("option");
+                option.value = item.id;
+                option.textContent = formatter
+                    ? formatter(item)
+                    : (item.name ?? item.label ?? item.id);
+                selectEl.appendChild(option);
+            });
+
+            // re-init
+            const cfg = configs.find((c) => c.selectId === selectId);
+            if (!cfg) return;
+
+            initTomSelect(
+                selectEl,
+                cfg.hiddenInputId,
+                cfg.placeholder,
+                selectId,
+            );
+        },
+        clear(selectId) {
+            instances.get(selectId)?.clear(true);
+        },
+        setValue(selectId, value) {
+            instances.get(selectId)?.setValue(value, true);
+        },
+    };
 }
