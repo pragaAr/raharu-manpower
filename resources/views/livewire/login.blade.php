@@ -5,12 +5,12 @@
       <h2 class="h3 text-center mb-4">Silahkan login</h2>
       <form wire:submit.prevent="login" autocomplete="off" novalidate>
         <div class="mb-3">
-          <label class="form-label">Username</label>
-          <input type="text" wire:model="username" class="form-control @error('username') is-invalid @enderror" placeholder="Username anda" autocomplete="off" autofocus>
+          <label for="usernameInput" class="form-label">Username</label>
+          <input type="text" id="usernameInput" wire:model="username" class="form-control @error('username') is-invalid @enderror" placeholder="Username anda" autocomplete="off" autofocus>
           @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
         <div class="mb-3">
-          <label class="form-label">
+          <label for="passwordInput" class="form-label">
             Password
           </label>
           <div class="input-group input-group-flat has-invalid">
