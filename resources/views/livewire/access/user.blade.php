@@ -157,19 +157,18 @@
     const ts = window.__plugins.user;
     if (!ts) return;
 
-    ts.clear();
-
     if (payload.karyawan_id) {
-      ts.setValue(payload.karyawan_id);
+      ts.clear('karyawan-select');    
+      ts.setValue('karyawan-select', payload.karyawan_id); 
+    } else {
+      ts.clear('karyawan-select');
     }
-
-    const roleSelect = window.__plugins.role;
-    if (!roleSelect) return;
-
-    roleSelect.clear();
-
+    
     if (payload.role_id) {
-      roleSelect.setValue(payload.role_id);
+      ts.clear('role-select');    
+      ts.setValue('role-select', payload.role_id); 
+    } else {
+      ts.clear('role-select');
     }
   });
 
