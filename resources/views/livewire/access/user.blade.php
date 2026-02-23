@@ -126,118 +126,64 @@
 
 @push('scripts')
 <script>
- document.addEventListener('livewire:navigated', () => {
+  window.__plugins = window.__plugins || {}
+
+  document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    const karyawanSelectEl = document.getElementById('karyawan-select')
-    const karyawanHiddenInput = document.getElementById('karyawan-hidden')
-    const karyawanErrorContainer = document.getElementById('karyawan-error')
-
-    const roleSelectEl = document.getElementById('role-select')
-    const roleHiddenInput = document.getElementById('role-hidden')
-    const roleErrorContainer = document.getElementById('role-error')
-
-    bindTomSelectModalValidation({ modalEl: modalEl, selectEl: karyawanSelectEl, errorEl: karyawanErrorContainer});
-    bindTomSelectModalValidation({ modalEl: modalEl, selectEl: roleSelectEl, errorEl: roleErrorContainer});
-
-    let karyawanSelect = null;
-    if (karyawanSelectEl) {
-      if (karyawanSelectEl.tomselect) {
-        karyawanSelectEl.tomselect.destroy();
-      }
-      karyawanSelect = new TomSelect(karyawanSelectEl, {
-        create: false,
-        allowEmptyOption: true,
-        placeholder: 'Pilih Karyawan..',
-        items: [],
-        onChange(value) {
-          karyawanHiddenInput.value = value
-          karyawanHiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-        }
-      })
-    }
-
-    let roleSelect = null;
-    if (roleSelectEl) {
-      if (roleSelectEl.tomselect) {
-        roleSelectEl.tomselect.destroy();
-      }
-      roleSelect = new TomSelect(roleSelectEl, {
-        create: false,
-        allowEmptyOption: true,
-        placeholder: 'Pilih Role..',
-        items: [],
-        onChange(value) {
-          roleHiddenInput.value = value
-          roleHiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-
-          @this.set('role_id', value)
-        }
-      })
-    }
-
-    // Prevent Enter key from submitting form
-    const preventEnter = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-    }
-    if (karyawanSelect) karyawanSelect.control_input.addEventListener('keydown', preventEnter)
-    if (roleSelect) roleSelect.control_input.addEventListener('keydown', preventEnter)
-
-    Livewire.on('openModal', (bundle) => {
-      const payload = Array.isArray(bundle) ? bundle[0] : bundle;
-      toggleModal('addEditModal', 'show');
-
-      // Reset active option for both selects
-      [karyawanSelect, roleSelect].forEach(select => {
-        if (select && select.activeOption) {
-          select.setActiveOption(null)
-        }
-      })
-
-      // Set value for karyawan Select
-      if (karyawanSelect) {
-        if (payload?.karyawan_id) {
-          karyawanSelect.setValue(payload.karyawan_id, true)
-        } else {
-          karyawanSelect.clear(true)
-        }
-      }
-
-      // Set value for role Select
-      if (roleSelect) {
-        if (payload?.role_id) {
-          roleSelect.setValue(payload.role_id, true)
-        } else {
-          roleSelect.clear(true)
-        }
-      }
-
-      // Force refresh for both
-      if (karyawanSelect) karyawanSelect.refreshOptions(false)
-      if (roleSelect) roleSelect.refreshOptions(false)
-    });
-
-    Livewire.on('closeModal', () => {
-      toggleModal('addEditModal', 'hide');
-      
-      [karyawanSelect, roleSelect].forEach(select => {
-        if (select) {
-          select.clear(true)
-          if (select.activeOption) {
-            select.setActiveOption(null)
-          }
-        }
-      })
-    });
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.user =
+      createTomSelectGroup('#user-form', [
+        {
+          selectId: 'karyawan-select',
+          errorId: 'karyawan-error',
+          hiddenInputId: 'karyawan-hidden',
+          placeholder: 'Pilih Karyawan..'
+        },
+        {
+          selectId: 'role-select',
+          errorId: 'role-error',
+          hiddenInputId: 'role-hidden',
+          placeholder: 'Pilih Role..'
+        }
+      ]);
   });
+
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.user;
+    if (!ts) return;
+
+    ts.clear();
+
+    if (payload.karyawan_id) {
+      ts.setValue(payload.karyawan_id);
+    }
+
+    const roleSelect = window.__plugins.role;
+    if (!roleSelect) return;
+
+    roleSelect.clear();
+
+    if (payload.role_id) {
+      roleSelect.setValue(payload.role_id);
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.user?.reset();
+  });
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.user?.destroy()
+    delete window.__plugins.user
+  })
 </script>
 @endpush
