@@ -10,10 +10,10 @@
       </div>
 
       <div class="modal-body">
-        <form wire:submit.prevent="save">
+        <form id="unit-form" wire:submit.prevent="save">
             
           <div class="mb-3">
-            <label class="form-label">Divisi</label>
+            <label for="divisi-select" class="form-label">Divisi</label>
             <input type="hidden" id="divisi-hidden" wire:model="divisi_id">
             <div wire:ignore>
               <select id="divisi-select" class="form-select text-uppercase">
@@ -31,8 +31,8 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Unit</label>
-            <input type="text" wire:model.defer="nama"
+            <label for="unit-input" class="form-label">Unit</label>
+            <input type="text" id="unit-input" wire:model.defer="nama"
               class="form-control text-uppercase @error('nama') is-invalid @enderror" autocomplete="off" placeholder="nama unit">
             @error('nama')
             <small class="text-danger">{{ $message }}</small>
@@ -40,8 +40,8 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Kode</label>
-            <input type="text" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode unit">
+            <label for="kode-input" class="form-label">Kode</label>
+            <input type="text" id="kode-input" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode unit">
             @error('kode')
             <small class="text-danger">{{ $message }}</small>
             @enderror

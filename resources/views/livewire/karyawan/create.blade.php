@@ -319,8 +319,8 @@
   })
 
   Livewire.on('focusFirstInput', () => {
-      const el = document.querySelector('input[wire\\:model="nama"]');
-      if (el) setTimeout(() => el.focus(), 100);
+    const el = document.querySelector('input[wire\\:model="nama"]');
+    if (el) setTimeout(() => el.focus(), 100);
   });
 </script>
 @endpush

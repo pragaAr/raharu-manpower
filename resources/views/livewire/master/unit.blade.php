@@ -9,6 +9,7 @@
 
       <div class="mb-3">
         <input type="text" class="form-control"
+          id="search-unit"
           placeholder="Cari unit..."
           wire:model.live.debounce.300ms="search">
       </div>
@@ -103,73 +104,50 @@
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    const selectEl = document.getElementById('divisi-select')
-    const hiddenInput = document.getElementById('divisi-hidden')
-    const errorContainer = document.getElementById('divisi-error')
-
-    bindTomSelectModalValidation({ modalEl: modalEl, selectEl, errorEl: errorContainer});
-
-    if (selectEl) {
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy();
-      }
-
-      let divisiSelect = new TomSelect(selectEl, {
-        create: false,
-        allowEmptyOption: true,
-        placeholder: 'Pilih Divisi..',
-        items: [],
-        onChange(value) {
-          // Set hidden input value dan trigger input event untuk Livewire
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-        }
-      })
-      
-      // Prevent Enter key from submitting form
-      divisiSelect.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
-
-      Livewire.on('openModal', (payload = {}) => {
-        toggleModal('addEditModal', 'show');
-
-        // Reset active option to prevent sticky state
-        if (divisiSelect.activeOption) {
-          divisiSelect.setActiveOption(null)
-        }
-
-        if (payload.divisi_id) {
-          divisiSelect.setValue(payload.divisi_id, true)
-        } else {
-          divisiSelect.clear(true)
-        }
-
-        // Force refresh to ensure UI is consistent
-        divisiSelect.refreshOptions(false)
-      });
-
-      Livewire.on('closeModal', () => {
-        toggleModal('addEditModal', 'hide');
-        divisiSelect.clear(true)
-
-        if (divisiSelect.activeOption) {
-          divisiSelect.setActiveOption(null)
-        }
-      });
-    }
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.unit =
+      createTomSelectGroup('#unit-form', [
+        {
+          selectId: 'divisi-select',
+          errorId: 'divisi-error',
+          hiddenInputId: 'divisi-hidden',
+          placeholder: 'Pilih Divisi..'
+        }
+      ]);
+  })
+
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.unit;
+    if (!ts) return;
+
+    if (payload.divisi_id) {
+      ts.clear('divisi-select');    
+      ts.setValue('divisi-select', payload.divisi_id); 
+    } else {
+      ts.clear('divisi-select');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.unit?.reset();
+  });
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.unit?.destroy()
+    delete window.__plugins.unit
   })
 </script>
 @endpush

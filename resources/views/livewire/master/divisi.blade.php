@@ -105,13 +105,13 @@
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
-    Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
   })
+
+  Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
+  Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
 </script>
 @endpush

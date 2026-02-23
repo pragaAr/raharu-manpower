@@ -10,9 +10,9 @@
       </div>
 
       <div class="modal-body">
-        <form wire:submit.prevent="save">
+        <form id="jabatan-form" wire:submit.prevent="save">
           <div class="mb-3">
-            <label class="form-label">Unit</label>
+            <label for="unit-select" class="form-label">Unit</label>
             <input type="hidden" id="unit-hidden" wire:model="unit_id">
             <div wire:ignore>
               <select id="unit-select" class="form-select text-uppercase">
@@ -30,8 +30,8 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Jabatan</label>
-            <input type="text" wire:model.defer="nama"
+            <label for="jabatan-input" class="form-label">Jabatan</label>
+            <input type="text" id="jabatan-input" wire:model.defer="nama"
               class="form-control text-uppercase @error('nama') is-invalid @enderror" autocomplete="off" placeholder="nama jabatan">
             @error('nama')
             <small class="text-danger">{{ $message }}</small>

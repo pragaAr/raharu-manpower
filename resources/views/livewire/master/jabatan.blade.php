@@ -9,6 +9,7 @@
 
       <div class="mb-3">
         <input type="text" class="form-control"
+          id="search-jabatan"
           placeholder="Cari jabatan..."
           wire:model.live.debounce.300ms="search">
       </div>
@@ -101,74 +102,50 @@
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
-    const selectEl = document.getElementById('unit-select')
-    const hiddenInput = document.getElementById('unit-hidden')
-    const errorContainer = document.getElementById('unit-error')
-    bindTomSelectModalValidation({ modalEl: modalEl, selectEl, errorEl: errorContainer});
-
-    if (selectEl) {
-      if (selectEl.tomselect) {
-        selectEl.tomselect.destroy();
-      }
-
-     let unitSelect = new TomSelect(selectEl, {
-        create: false,
-        allowEmptyOption: true,
-        placeholder: 'Pilih Unit..',
-        items: [],
-        onChange(value) {
-          // Set hidden input value dan trigger input event untuk Livewire
-          hiddenInput.value = value
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
-        }
-      })
-
-      // Prevent Enter key from submitting form
-      unitSelect.control_input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      })
-
-      Livewire.on('openModal', (payload = {}) => {
-        toggleModal('addEditModal', 'show');
-
-        // Reset active option to prevent sticky state
-        if (unitSelect.activeOption) {
-          unitSelect.setActiveOption(null)
-        }
-
-        if (payload.unit_id) {
-          unitSelect.setValue(payload.unit_id, true)
-        } else {
-          unitSelect.clear(true)
-        }
-
-        // Force refresh to ensure UI is consistent
-        unitSelect.refreshOptions(false)
-      });
-
-      Livewire.on('closeModal', () => {
-        toggleModal('addEditModal', 'hide');
-
-        unitSelect.clear(true)
-
-        if (unitSelect.activeOption) {
-          unitSelect.setActiveOption(null)
-        }
-      });
-    }
-
-    Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
-    Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.jabatan =
+      createTomSelectGroup('#jabatan-form', [
+        {
+          selectId: 'unit-select',
+          errorId: 'unit-error',
+          hiddenInputId: 'unit-hidden',
+          placeholder: 'Pilih Unit..'
+        }
+      ]);
   })
- 
+
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.jabatan;
+    if (!ts) return;
+
+    if (payload.unit_id) {
+      ts.clear('unit-select');    
+      ts.setValue('unit-select', payload.unit_id); 
+    } else {
+      ts.clear('unit-select');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.jabatan?.reset();
+  });
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.jabatan?.destroy()
+    delete window.__plugins.jabatan
+  })
 </script>
 @endpush
