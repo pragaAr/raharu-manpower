@@ -31,10 +31,22 @@ class AuthController extends Controller
 
       $token = $user->createToken('mobile-token', ['*'], now()->addDays(30))->plainTextToken;
 
+      $user->load([
+        'karyawan' => function ($q) {
+          $q->select('id', 'nama', 'nik', 'img', 'jabatan_id', 'lokasi_id');
+        },
+        'karyawan.jabatan' => function ($q) {
+          $q->select('id', 'nama');
+        },
+        'karyawan.lokasi' => function ($q) {
+          $q->select('id', 'nama', 'lat', 'lng');
+        }
+      ]);
+
       return response()->json([
         'message' => 'Login success',
         'token' => $token,
-        'user' => $user->load('karyawan.lokasi', 'karyawan.jabatan'),
+        'user' => $user,
       ]);
     }
 

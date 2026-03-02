@@ -91,7 +91,6 @@ class Edit extends Component
 
         $service->update(
           $karyawan,
-          $this->fotoUpload,
           [
             'nama'        => $this->nama,
             'ktp'         => $this->ktp,
@@ -104,7 +103,8 @@ class Edit extends Component
             'bpjsTk'      => $this->bpjsTk,
             'bpjsKs'      => $this->bpjsKs,
             'tglLahir'    => $this->tglLahir,
-          ]
+          ],
+          $this->fotoUpload
         );
 
         $this->dispatch('alert', [

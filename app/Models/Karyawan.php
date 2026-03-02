@@ -9,6 +9,8 @@ class Karyawan extends Model
 {
   protected $table = 'karyawan';
 
+  protected $appends = ['img_url'];
+
   protected $fillable = [
     'kategori_id',
     'lokasi_id',
@@ -137,5 +139,12 @@ class Karyawan extends Model
     return $query->whereHas('kategori', function ($q) {
       $q->whereNotIn('nama', ['harian', 'magang']);
     });
+  }
+
+  public function getImgUrlAttribute()
+  {
+    return $this->img
+      ? asset($this->img)
+      : asset('uploads/default.webp');
   }
 }
