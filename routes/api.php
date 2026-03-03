@@ -13,7 +13,6 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/me', [AuthController::class, 'me']);
   Route::post('/logout', [AuthController::class, 'logout']);
 
-  Route::post('/absensi', [AbsensiController::class, 'store']);
   Route::post('/absensi/clock', [AbsensiController::class, 'clock']);
   Route::get('/absensi/status', [AbsensiController::class, 'status']);
 });
