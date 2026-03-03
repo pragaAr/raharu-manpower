@@ -106,8 +106,15 @@ class Lokasi extends Component
       [
         'nama'  => ['required', 'min:3', Rule::unique('lokasi', 'nama')->ignore($this->lokasiId)],
         'kode'  => ['required', 'min:1', Rule::unique('lokasi', 'kode')->ignore($this->lokasiId)],
-        'lat'   => ['required', Rule::unique('lokasi', 'lat')->ignore($this->lokasiId)],
-        'lng'   => ['required', Rule::unique('lokasi', 'lng')->ignore($this->lokasiId)],
+        'lat'   => ['required', 'numeric', 'between:-90,90'],
+        'lng'   => [
+          'required',
+          'numeric',
+          'between:-180,180',
+          Rule::unique('lokasi', 'lng')
+            ->where(fn($query) => $query->where('lat', trim((string) $this->lat)))
+            ->ignore($this->lokasiId),
+        ],
       ],
       [
         'nama.required' => 'Nama Lokasi wajib diisi.',
@@ -117,64 +124,88 @@ class Lokasi extends Component
         'kode.min'      => 'Kode Lokasi minimal 1 karakter.',
         'kode.unique'   => 'Kode Lokasi sudah digunakan.',
         'lat.required'  => 'Latitude Lokasi wajib diisi.',
-        'lat.unique'    => 'Latitude Lokasi sudah digunakan.',
+        'lat.numeric'   => 'Latitude harus berupa angka.',
+        'lat.between'   => 'Latitude harus di antara -90 sampai 90.',
         'lng.required'  => 'Longitude Lokasi wajib diisi.',
-        'lng.unique'    => 'Longitude Lokasi sudah digunakan.',
+        'lng.numeric'   => 'Longitude harus berupa angka.',
+        'lng.between'   => 'Longitude harus di antara -180 sampai 180.',
+        'lng.unique'    => 'Kombinasi Latitude dan Longitude sudah digunakan.',
 
       ]
     );
 
-    $this->isEdit ? $this->updateData() : $this->storeData();
+    $saved = $this->isEdit ? $this->updateData() : $this->storeData();
 
-    $this->resetForm();
-    $this->dispatch('closeModal');
+    if ($saved) {
+      $this->resetForm();
+      $this->dispatch('closeModal');
+    }
   }
 
-  public function storeData()
+  public function storeData(): bool
   {
     $this->authorize('lokasi.create');
 
     try {
       LokasiModel::create([
         'nama'  => strtolower(trim($this->nama)),
-        'kode'  => strtolower(trim($this->kode)),
         'lat'   => trim($this->lat),
         'lng'   => trim($this->lng),
+        'kode'  => strtolower(trim($this->kode)),
       ]);
 
       $this->dispatch('alert', [
         'type'    => 'success',
         'message' => 'Data berhasil ditambah.'
       ]);
+
+      return true;
     } catch (\Exception $e) {
       $this->dispatch('alert', [
         'type'    => 'error',
         'message' => 'Data gagal ditambah.'
       ]);
+
+      return false;
     }
   }
 
-  public function updateData()
+  public function updateData(): bool
   {
     $this->authorize('lokasi.edit');
 
     try {
-      LokasiModel::find($this->lokasiId)->update([
+      $lokasi = LokasiModel::find($this->lokasiId);
+
+      if (!$lokasi) {
+        $this->dispatch('alert', [
+          'type'    => 'error',
+          'message' => 'Data tidak ditemukan.'
+        ]);
+
+        return false;
+      }
+
+      $lokasi->update([
         'nama'  => strtolower(trim($this->nama)),
-        'kode'  => strtolower(trim($this->kode)),
         'lat'   => trim($this->lat),
         'lng'   => trim($this->lng),
+        'kode'  => strtolower(trim($this->kode)),
       ]);
 
       $this->dispatch('alert', [
         'type'    => 'success',
         'message' => 'Data berhasil diupdate.'
       ]);
+
+      return true;
     } catch (\Exception $e) {
       $this->dispatch('alert', [
         'type'    => 'error',
         'message' => 'Data gagal diupdate.'
       ]);
+
+      return false;
     }
   }
 

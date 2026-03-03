@@ -85,7 +85,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="4" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="{{ $hasActions ? 6 : 5 }}" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
