@@ -17,8 +17,7 @@ use Livewire\Attributes\{
 use App\Models\{
   Kategori,
   Lokasi,
-  Divisi,
-  Jabatan
+  Divisi
 };
 
 use App\Services\Karyawan\{
@@ -47,7 +46,7 @@ class Index extends Component
   public $search = '';
   public $lastPage = 1;
 
-  public $kategoris = [], $lokasis = [], $divisis = [], $jabatans = [];
+  public $kategoris = [], $lokasis = [], $divisis = [];
 
   protected array $allowedQuery = [
     'status',
@@ -83,7 +82,6 @@ class Index extends Component
     $this->kategoris = Kategori::orderBy('nama')->get(['id', 'nama']);
     $this->lokasis   = Lokasi::orderBy('nama')->get(['id', 'nama']);
     $this->divisis   = Divisi::orderBy('nama')->get(['id', 'nama']);
-    $this->jabatans  = Jabatan::orderBy('nama')->get(['id', 'nama']);
 
     $allowedStatus = ['aktif', 'nonaktif', 'vakum'];
 

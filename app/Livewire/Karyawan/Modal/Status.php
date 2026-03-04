@@ -31,11 +31,6 @@ class Status extends Component
 
   public $lokasis = [];
 
-  public function mount()
-  {
-    $this->lokasis = Lokasi::orderBy('nama')->get(['id', 'nama']);
-  }
-
   public function updatedStatus($value)
   {
     if ($this->isInitializing) return;
@@ -62,6 +57,10 @@ class Status extends Component
   public function open($id)
   {
     $this->authorize('karyawan.update-status');
+
+    if (blank($this->lokasis)) {
+      $this->lokasis = Lokasi::orderBy('nama')->get(['id', 'nama']);
+    }
 
     $this->isInitializing = true;
 

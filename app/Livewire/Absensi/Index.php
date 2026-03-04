@@ -52,11 +52,6 @@ class Index extends Component
 
   public function mount()
   {
-    $this->karyawans = Karyawan::bolehAbsen()
-      ->select('id', 'nik', 'nama')
-      ->orderBy('id')
-      ->get();
-
     $this->statusOptions = Absensi::statusList();
   }
 
@@ -68,8 +63,8 @@ class Index extends Component
   public function updatedStatus($value)
   {
     if ($value !== 'hadir') {
-      $this->jam_masuk = null;
-      $this->jam_pulang = null;
+      $this->masuk = null;
+      $this->pulang = null;
     }
   }
 
@@ -115,7 +110,9 @@ class Index extends Component
     $this->resetForm();
     $this->isEdit = false;
 
-    $this->dispatch('openModal');
+    $this->loadKaryawans();
+
+    $this->dispatch('openModal', options: $this->karyawanOptions());
   }
 
   public function edit($id)
@@ -156,7 +153,9 @@ class Index extends Component
     $this->absenId = $id;
     $this->isEdit  = true;
 
-    $this->dispatch('openModal', karyawan_id: $this->karyawanId);
+    $this->loadKaryawans();
+
+    $this->dispatch('openModal', options: $this->karyawanOptions(), karyawan_id: $this->karyawanId);
   }
 
   public function save(AbsensiService $service)
@@ -339,5 +338,29 @@ class Index extends Component
       'keteranganMasuk',
       'keteranganPulang',
     ]);
+  }
+
+  protected function loadKaryawans(): void
+  {
+    if (! empty($this->karyawans)) {
+      return;
+    }
+
+    $this->karyawans = Karyawan::bolehAbsen()
+      ->select('id', 'nik', 'nama')
+      ->orderBy('id')
+      ->get();
+  }
+
+  protected function karyawanOptions(): array
+  {
+    return collect($this->karyawans)
+      ->map(fn($karyawan) => [
+        'id'   => $karyawan->id,
+        'nik'  => $karyawan->nik,
+        'nama' => $karyawan->nama,
+      ])
+      ->values()
+      ->all();
   }
 }

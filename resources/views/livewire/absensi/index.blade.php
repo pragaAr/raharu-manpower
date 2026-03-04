@@ -40,9 +40,9 @@
               <td class="text-uppercase" title="{{ $row->karyawan->nama }}" style="cursor: help;">{{ $row->karyawan->nik }}</td>
               <td>{{ optional($row->jam_masuk)->format('H:i') ?? '-' }}</td>
               <td>{{ optional($row->jam_pulang)->format('H:i') ?? '-' }}</td>
-              <td class="text-uppercase">{{ $row->lastLog->source ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->lastLog?->source ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->lastLog?->inputBy?->username ?? '-' }}</td>
-              <td class="text-uppercase">{{ $row->lastLog->keterangan ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->lastLog?->keterangan ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->lastLog?->jenis ?? '-'}}</td>
               @if($hasActions)
               <td>
@@ -144,6 +144,14 @@
     const ts = window.__plugins.absensi;
     if (!ts) return;
 
+    if (Array.isArray(payload.options)) {
+      ts.refresh('absensi-karyawanSelect', payload.options, (item) => {
+        const nik = String(item.nik ?? '').toUpperCase();
+        const nama = String(item.nama ?? '').toUpperCase();
+        return [nik, nama].filter(Boolean).join(' - ');
+      });
+    }
+
     if (payload.karyawan_id) {
       ts.clear('absensi-karyawanSelect');    
       ts.setValue('absensi-karyawanSelect', payload.karyawan_id); 
@@ -154,7 +162,7 @@
 
   Livewire.on('closeModal', () => {
     toggleModal('addEditModal', 'hide');
-    window.__plugins.karyawanSelect?.reset();
+    window.__plugins.absensi?.reset();
   });
 
   Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));

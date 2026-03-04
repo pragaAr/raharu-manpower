@@ -38,6 +38,21 @@
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
+                  <a href="https://www.google.com/maps?q={{ $row->lat }},{{ $row->lng }}"
+                    target="_blank" rel="noopener noreferrer" title="Lihat di Google Maps" class="btn btn-info btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      style="width: 18px; height: 18px;"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye me-0">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                    </svg>
+                  </a>
                   @can('lokasi.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
                     wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
