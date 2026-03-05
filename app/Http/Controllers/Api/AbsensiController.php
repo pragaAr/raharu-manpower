@@ -36,7 +36,7 @@ class AbsensiController extends Controller
         throw new \Exception('Kategori karyawan tidak diizinkan absen via mobile.');
       }
 
-      // --- Validasi lokasi ---
+      // Validasi lokasi
       $lokasi = $karyawan->lokasi;
 
       if (!$lokasi || is_null($lokasi->lat) || is_null($lokasi->lng)) {
@@ -71,7 +71,7 @@ class AbsensiController extends Controller
         $sisaCooldown = $this->hitungSisaCooldown($absensi);
 
         if ($sisaCooldown > 0) {
-          throw new \Exception("Silakan tunggu {$sisaCooldown} menit lagi sebelum clock-out.");
+          throw new \Exception("Silakan tunggu {$sisaCooldown} menit lagi.");
         }
 
         $absensi->update(['jam_pulang' => $jam]);
@@ -171,7 +171,80 @@ class AbsensiController extends Controller
     }
   }
 
-  // ─── Helper ────────────────────────────────────
+  public function history(Request $request)
+  {
+    $request->validate([
+      'from'     => ['nullable', 'date'],
+      'to'       => ['nullable', 'date', 'after_or_equal:from'],
+      'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+    ]);
+
+    try {
+      $user     = $request->user();
+      $karyawan = $user->karyawan;
+
+      if (!$karyawan) {
+        throw new \Exception('User tidak memiliki data karyawan.');
+      }
+
+      $perPage = (int) $request->integer('per_page', 30);
+
+      $query = Absensi::query()
+        ->where('karyawan_id', $karyawan->id)
+        ->when(
+          $request->filled('from'),
+          fn($q) =>
+          $q->whereDate('tanggal', '>=', $request->input('from'))
+        )
+        ->when(
+          $request->filled('to'),
+          fn($q) =>
+          $q->whereDate('tanggal', '<=', $request->input('to'))
+        )
+        ->with([
+          'logs' => fn($q) =>
+          $q->orderBy('jam', 'asc')->orderBy('id', 'asc')
+        ])
+        ->orderBy('tanggal', 'desc');
+
+      $records = $query->paginate($perPage);
+
+      $data = $records->getCollection()->map(function (Absensi $absensi) {
+        return [
+          'id'         => $absensi->id,
+          'tanggal'    => $absensi->tanggal?->format('Y-m-d'),
+          'status'     => $absensi->status,
+          'jam_masuk'  => $absensi->jam_masuk?->format('H:i'),
+          'jam_pulang' => $absensi->jam_pulang?->format('H:i'),
+          'logs'       => $absensi->logs->map(function (AbsensiLog $log) {
+            return [
+              'id'         => $log->id,
+              'jenis'      => $log->jenis,
+              'jam'        => $log->jam?->format('H:i'),
+              'source'     => $log->source,
+              'keterangan' => $log->keterangan,
+            ];
+          })->values(),
+        ];
+      })->values();
+
+      return response()->json([
+        'message' => 'Riwayat absensi',
+        'data'    => $data,
+        'meta'    => [
+          'current_page' => $records->currentPage(),
+          'last_page'    => $records->lastPage(),
+          'per_page'     => $records->perPage(),
+          'total'        => $records->total(),
+          'has_more'     => $records->hasMorePages(),
+        ],
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'message' => $e->getMessage(),
+      ], 422);
+    }
+  }
 
   /**
    * Hitung sisa cooldown dalam menit.
@@ -187,10 +260,10 @@ class AbsensiController extends Controller
       return 0;
     }
 
-    $jamLog       = Carbon::parse($lastLog->jam);
+    $jamLog        = Carbon::parse($lastLog->jam);
     $jamLogHariIni = now()->copy()->setTimeFrom($jamLog);
-    $selisih      = now()->diffInMinutes($jamLogHariIni);
-    $sisa         = self::COOLDOWN_MENIT - $selisih;
+    $selisih       = now()->diffInMinutes($jamLogHariIni);
+    $sisa          = self::COOLDOWN_MENIT - $selisih;
 
     return (int) max(0, $sisa);
   }

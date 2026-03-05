@@ -15,4 +15,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::post('/absensi/clock', [AbsensiController::class, 'clock']);
   Route::get('/absensi/status', [AbsensiController::class, 'status']);
+  Route::get('/absensi/history', [AbsensiController::class, 'history']);
 });
