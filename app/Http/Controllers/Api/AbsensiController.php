@@ -16,17 +16,32 @@ class AbsensiController extends Controller
 {
   const RADIUS_METER    = 20;
   const COOLDOWN_MENIT  = 60;
+  const MAX_ACCURACY_METER = 50;
 
   public function clock(Request $request, AbsensiService $service)
   {
     $request->validate([
       'lat' => ['required', 'numeric', 'between:-90,90'],
       'lng' => ['required', 'numeric', 'between:-180,180'],
+      'accuracy'  => ['nullable', 'numeric', 'min:0', 'max:1000'],
+      'is_mocked' => ['nullable', 'boolean'],
     ]);
 
     try {
       $user     = $request->user();
       $karyawan = $user->karyawan;
+      $isMocked = $request->boolean('is_mocked');
+      $accuracy = $request->input('accuracy');
+
+      if ($isMocked) {
+        throw new \Exception('Lokasi terdeteksi menggunakan mock/fake GPS.');
+      }
+
+      if (!is_null($accuracy) && (float) $accuracy > self::MAX_ACCURACY_METER) {
+        throw new \Exception(
+          'Akurasi lokasi terlalu rendah (' . round((float) $accuracy, 1) . 'm). Mohon aktifkan GPS lalu coba lagi.'
+        );
+      }
 
       if (!$karyawan || $karyawan->status !== 'aktif') {
         throw new \Exception('Karyawan tidak ditemukan atau tidak aktif.');
@@ -101,6 +116,7 @@ class AbsensiController extends Controller
           'jam'         => $jam,
           'tanggal'     => now()->toDateString(),
           'jarak_meter' => round($jarak, 1),
+          'akurasi_meter' => is_null($accuracy) ? null : round((float) $accuracy, 1),
           'lokasi'      => $lokasi->nama,
         ],
       ], 201);
