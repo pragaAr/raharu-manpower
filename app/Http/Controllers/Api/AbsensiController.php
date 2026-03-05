@@ -276,10 +276,13 @@ class AbsensiController extends Controller
       return 0;
     }
 
-    $jamLog        = Carbon::parse($lastLog->jam);
-    $jamLogHariIni = now()->copy()->setTimeFrom($jamLog);
-    $selisih       = now()->diffInMinutes($jamLogHariIni);
-    $sisa          = self::COOLDOWN_MENIT - $selisih;
+    $jamLogHariIni = now()->copy()->setTimeFromTimeString((string) $lastLog->jam);
+
+    // Gunakan selisih bertanda: jika jam log berada di masa depan, elapsed = 0
+    // agar cooldown tidak naik terus.
+    $elapsedMenit = $jamLogHariIni->diffInMinutes(now(), false);
+    $elapsedMenit = max(0, $elapsedMenit);
+    $sisa         = self::COOLDOWN_MENIT - $elapsedMenit;
 
     return (int) max(0, $sisa);
   }
