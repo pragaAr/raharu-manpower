@@ -10,7 +10,6 @@ use App\Models\{
   AbsensiLog,
   Karyawan
 };
-use Carbon\Carbon;
 
 class AbsensiController extends Controller
 {
