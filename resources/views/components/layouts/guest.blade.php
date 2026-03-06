@@ -94,8 +94,10 @@
   
   @livewireStyles
   <script>
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    (() => {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
   </script>
 </head>
 
@@ -115,48 +117,63 @@
   @livewireScripts
   <script src="{{ asset('js/vendor/toastify.js') }}"></script>
   <script>
-    document.addEventListener('livewire:init', () => {
-      const showToast = (type, message) => {
-        let backgroundColor;
-        if (type === 'success') {
-          backgroundColor = "linear-gradient(to right, #00b09b, #96c93d)";
-        } else if (type === 'error') {
-          backgroundColor = "linear-gradient(to right, #ff5f6d, #ffc371)";
-        } else if (type === 'warning') {
-          backgroundColor = "linear-gradient(to right, #f7971e, #ffd200)";
-        } else if (type === 'info') {
-          backgroundColor = "linear-gradient(to right, #2193b0, #6dd5ed)";
-        } else {
-          backgroundColor = "#333";
-        }
-
-        Toastify({
-          text: message,
-          duration: 5000,
-          close: true,
-          gravity: "top",
-          position: "left",
-          stopOnFocus: true,
-          style: {
-            background: backgroundColor,
-            borderRadius: "4px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "10px",
-          }
-        }).showToast();
+    const showToast = (type, message) => {
+      let backgroundColor;
+      if (type === 'success') {
+        backgroundColor = "linear-gradient(to right, #00b09b, #96c93d)";
+      } else if (type === 'error') {
+        backgroundColor = "linear-gradient(to right, #ff5f6d, #ffc371)";
+      } else if (type === 'warning') {
+        backgroundColor = "linear-gradient(to right, #f7971e, #ffd200)";
+      } else if (type === 'info') {
+        backgroundColor = "linear-gradient(to right, #2193b0, #6dd5ed)";
+      } else {
+        backgroundColor = "#333";
       }
+
+      Toastify({
+        text: message,
+        duration: 5000,
+        close: true,
+        gravity: "top",
+        position: "left",
+        stopOnFocus: true,
+        style: {
+          background: backgroundColor,
+          borderRadius: "4px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "10px",
+        }
+      }).showToast();
+    };
+
+    const bindLivewireToastEvents = () => {
+      if (!window.Livewire || window.__guestToastEventsBound) return;
+      window.__guestToastEventsBound = true;
 
       Livewire.on('alert', (param) => {
         showToast(param[0].type, param[0].message);
       });
+    };
 
-      @if(session()->has('alert'))
-        const sessionAlert = @json(session('alert'));
-        showToast(sessionAlert.type, sessionAlert.message);
-      @endif
-    });
+    bindLivewireToastEvents();
+    document.addEventListener('livewire:init', bindLivewireToastEvents);
+
+    @if(session()->has('alert'))
+      const sessionAlert = @json(session('alert'));
+      showToast(sessionAlert.type, sessionAlert.message);
+    @endif
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reason') === 'session-expired') {
+      showToast('error', 'Sesi Anda telah berakhir. Silakan login kembali.');
+      params.delete('reason');
+      const cleanQuery = params.toString();
+      const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}${window.location.hash}`;
+      window.history.replaceState({}, '', cleanUrl);
+    }
   </script>
 </body>
 

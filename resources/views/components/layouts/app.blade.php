@@ -16,56 +16,159 @@
   <script src="{{ asset('js/util.js') }}" data-navigate-once></script>
 
   <script data-navigate-once>
-    document.addEventListener('livewire:init', () => {
-      const showToast = (type, message) => {
-        let backgroundColor;
-        if (type === 'success') {
-          backgroundColor = "linear-gradient(to right, #00b09b, #96c93d)";
-        } else if (type === 'error') {
-          backgroundColor = "linear-gradient(to right, #ff5f6d, #ffc371)";
-        } else if (type === 'warning') {
-          backgroundColor = "linear-gradient(to right, #f7971e, #ffd200)";
-        } else if (type === 'info') {
-          backgroundColor = "linear-gradient(to right, #2193b0, #6dd5ed)";
-        } else {
-          backgroundColor = "#333";
+    let isSessionExpired = false;
+    let notificationAbortController = null;
+
+    const sessionExpiredRedirectUrl = '/login?reason=session-expired';
+
+    const isLoginRedirectResponse = (response) => {
+      if (!response?.redirected || !response?.url) return false;
+
+      try {
+        const redirectedUrl = new URL(response.url, window.location.origin);
+        return redirectedUrl.pathname === '/login';
+      } catch {
+        return false;
+      }
+    };
+
+    const isLivewireOrNotificationRequest = (resource) => {
+      const rawUrl = typeof resource === 'string'
+        ? resource
+        : resource instanceof Request
+          ? resource.url
+          : resource?.url;
+
+      if (!rawUrl) return false;
+
+      try {
+        const url = new URL(rawUrl, window.location.origin);
+        return url.pathname.startsWith('/livewire') || url.pathname === '/notification';
+      } catch {
+        return false;
+      }
+    };
+
+    if (!window.__sessionRequestGuardBound) {
+      window.__sessionRequestGuardBound = true;
+
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (resource, init) => {
+        if (isSessionExpired && isLivewireOrNotificationRequest(resource)) {
+          return Promise.reject(new DOMException('Session expired', 'AbortError'));
         }
 
-        Toastify({
-          text: message,
-          duration: 5000,
-          close: true,
-          gravity: "top",
-          position: "left",
-          stopOnFocus: true,
-          style: {
-            background: backgroundColor,
-            borderRadius: "4px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "10px",
-          }
-        }).showToast();
+        return nativeFetch(resource, init);
+      };
+    }
+
+    const showToast = (type, message) => {
+      let backgroundColor;
+      if (type === 'success') {
+        backgroundColor = "linear-gradient(to right, #00b09b, #96c93d)";
+      } else if (type === 'error') {
+        backgroundColor = "linear-gradient(to right, #ff5f6d, #ffc371)";
+      } else if (type === 'warning') {
+        backgroundColor = "linear-gradient(to right, #f7971e, #ffd200)";
+      } else if (type === 'info') {
+        backgroundColor = "linear-gradient(to right, #2193b0, #6dd5ed)";
+      } else {
+        backgroundColor = "#333";
       }
 
+      Toastify({
+        text: message,
+        duration: 5000,
+        close: true,
+        gravity: "top",
+        position: "left",
+        stopOnFocus: true,
+        style: {
+          background: backgroundColor,
+          borderRadius: "4px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "10px",
+        }
+      }).showToast();
+    };
+
+    const handleSessionExpired = () => {
+      if (isSessionExpired) return;
+
+      isSessionExpired = true;
+      window.__sessionExpired = true;
+
+      if (notificationAbortController) {
+        notificationAbortController.abort();
+        notificationAbortController = null;
+      }
+
+      window.location.href = sessionExpiredRedirectUrl;
+    };
+
+    document.addEventListener('livewire:init', () => {
       Livewire.on('alert', (param) => {
         showToast(param[0].type, param[0].message);
       });
 
       Livewire.on('refresh-notification', () => {
-      fetchNotifications();
-    });
+        if (isSessionExpired) return;
+        fetchNotifications();
+      });
+
+      Livewire.hook('request', ({ respond, fail }) => {
+        respond(({ status, response }) => {
+          if (status === 401 || status === 419 || isLoginRedirectResponse(response)) {
+            handleSessionExpired();
+          }
+        });
+
+        fail(({ status, preventDefault }) => {
+          if (status === 419 || status === 401) {
+            preventDefault();
+            handleSessionExpired();
+          }
+        });
+      });
     });
 
     document.addEventListener('livewire:navigated', () => {
+      if (isSessionExpired) return;
       fetchNotifications();
     });
 
     async function fetchNotifications() {
+      if (isSessionExpired) return;
+
       const url = "/notification";
+      const controller = new AbortController();
+
+      if (notificationAbortController) {
+        notificationAbortController.abort();
+      }
+
+      notificationAbortController = controller;
+
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          signal: controller.signal,
+        });
+
+        if (response.status === 401 || response.status === 419 || isLoginRedirectResponse(response)) {
+          handleSessionExpired();
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Gagal memuat notifikasi. Status: ${response.status}`);
+        }
+
         const data = await response.json();
 
         const badge = document.getElementById('badgeNotification');
@@ -113,7 +216,12 @@
         }
 
       } catch (e) {
+        if (e?.name === 'AbortError') return;
         console.error(e);
+      } finally {
+        if (notificationAbortController === controller) {
+          notificationAbortController = null;
+        }
       }
     }
   </script>
