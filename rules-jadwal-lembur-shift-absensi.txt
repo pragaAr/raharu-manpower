@@ -54,72 +54,221 @@ lembur hanya menghitung waktu saja, dengan dibedakan lembur hari besar atau hari
 
 schema table
 
-#work_rules
+#catatan umum schema
+-rule jabatan dibuat 1x dan dianggap berlaku selamanya
+-naming mengikuti pola tabel existing (singular): karyawan, jabatan, absensi
+
+#work_rule
 id
 jabatan_id
+type -> (shift, rule, hybrid)
 use_shift (bool)
 auto_overtime (bool)
-need_overtime_approval (bool)
+overtime_need_approval (bool)
 cuti_need_approval (bool)
 allow_double_shift (bool)
 allow_shift_swap (bool)
+created_by (nullable)
+updated_by (nullable)
+created_at
+updated_at
 
 #work_rule_days
 id
 work_rule_id
-day_of_week
+day_of_week (1=senin ... 7=minggu)
 jam_masuk
 jam_pulang
 is_workday
+created_at
+updated_at
+unique(work_rule_id, day_of_week)
 
-#shift
+#shift_master
 id
 nama
 jam_masuk
 jam_pulang
+is_active
+created_at
+updated_at
 
 #jadwal_karyawan
 id
 karyawan_id
 tanggal
-shift_id (nullable)
+shift_id (nullable, fk ke shift_master)
 shift_nama
 jam_masuk
 jam_pulang
 is_libur
-generated_by
+is_holiday
+generated_by (nullable)
+created_by (nullable)
+updated_by (nullable)
+created_at
+updated_at
+unique(karyawan_id, tanggal)
 
 #jadwal_lembur
 id
 karyawan_id
 tanggal
-type -> (NORMAL, HOLIDAY)
+type -> (normal, holiday)
 jam_mulai
 jam_selesai
-approved_by
-created_by
+status -> (pending, approved, rejected, cancelled)
+approved_by (nullable)
+approved_at (nullable)
+created_by (nullable)
+updated_by (nullable)
+created_at
+updated_at
+index(karyawan_id, tanggal)
 
-#holidays
+#holiday
 id
 tanggal
 nama
 is_national
+created_at
+updated_at
 
-#requests
+#cuti_request
 id
 karyawan_id
-type -> (CUTI, SHIFT_SWAP, OVERTIME_CHANGE, DOUBLE_SHIFT)
-reference_id
 tanggal_mulai
 tanggal_selesai
+alasan
 status
-approved_by
+approved_by (nullable)
+approved_at (nullable)
+created_at
+updated_at
 
-#request_logs
+#tukar_shift_request
 id
+requester_id (karyawan_id pemohon)
+target_karyawan_id (karyawan partner tukar shift)
+tanggal
+jadwal_karyawan_id
+catatan
+status
+approved_by (nullable)
+approved_at (nullable)
+created_at
+updated_at
+
+#perubahan_lembur_request
+id
+karyawan_id
+jadwal_lembur_id
+tanggal
+jam_mulai_lama
+jam_selesai_lama
+jam_mulai_baru
+jam_selesai_baru
+alasan
+status
+approved_by (nullable)
+approved_at (nullable)
+created_at
+updated_at
+
+#double_shift_request
+id
+karyawan_id
+tanggal
+shift_awal_id
+shift_tambahan_id
+catatan
+status
+approved_by (nullable)
+approved_at (nullable)
+created_at
+updated_at
+
+#request_log
+id
+request_type -> (cuti, tukar_shift, perubahan_lembur, double_shift)
 request_id
-action
+action -> (created, approved, rejected, cancelled, revised)
 actor_id
 catatan
 created_at
+
+#opsional untuk jadwal lembur terencana (biar jelas beda antara "jadwal" vs "hasil absensi")
+#rencana_lembur_harian
+id
+karyawan_id
+tanggal
+jam_mulai_rencana
+jam_selesai_rencana
+created_by (nullable)
+updated_by (nullable)
+created_at
+updated_at
+unique(karyawan_id, tanggal)
+
+#integrasi ke absensi existing
+-absensi tetap sumber data realisasi jam masuk/pulang
+-lembur terhitung dari selisih jam realisasi terhadap aturan + jenis hari (normal/holiday)
+-lembur yang butuh approval mengikuti flag di work_rule dan status di jadwal_lembur/request terkait
+
+===========
+plan implementasi (tahap awal: autogenerate jadwal satpam saja)
+===========
+
+#scope tahap 1
+-autogenerate hanya berlaku untuk karyawan dengan jabatan satpam
+-jabatan lain tetap manual (belum ikut generator)
+-jadwal lembur belum diautogenerate di tahap ini, fokus jadwal kerja shift
+
+#perubahan data minimal
+-tambah flag di karyawan:
+ -ikut_jadwal_kerja (bool, default true)
+ -ikut_jadwal_lembur (bool, default false)
+-pastikan unique(karyawan_id, tanggal) di jadwal_karyawan aktif
+-siapkan data shift_master satpam: pagi, sore, malam
+
+#flow saat create/update karyawan
+-saat simpan karyawan, cek:
+ -jabatan == satpam
+ -ikut_jadwal_kerja == true
+ -status karyawan aktif
+-jika semua terpenuhi, jalankan generator jadwal 1 bulan ke depan
+-jika tidak terpenuhi, skip generator
+
+#aturan generator satpam (v1)
+-periode generate: dari tanggal efektif (hari ini atau tgl_masuk, ambil yang paling akhir) sampai +30 hari
+-setiap hari harus ada jadwal (senin-minggu aktif)
+-is_libur ditentukan acak terkontrol sesuai kuota bulanan (misal 4 hari libur/bulan, bisa diatur di config)
+-hari non-libur isi shift rotasi: pagi -> sore -> malam -> ulang
+-kolom yang diisi: shift_id, shift_nama, jam_masuk, jam_pulang, is_libur, generated_by='system'
+-jika tanggal sudah ada (karena regenerate), update baris existing, jangan insert dobel
+
+#trigger regenerate
+-create karyawan satpam baru
+-perubahan jabatan menjadi satpam
+-toggle ikut_jadwal_kerja dari false ke true
+-aksi manual dari SPV: "generate ulang jadwal bulan ini"
+
+#guard rails
+-jika karyawan nonaktif/tgl_keluar terisi, generator berhenti di tanggal terakhir aktif
+-jika shift_master satpam belum lengkap 3 shift, generator gagal dengan pesan validasi
+-logging minimal: simpan jumlah tanggal yang dibuat/diupdate
+
+#urutan kerja teknis
+1. migration penambahan kolom flag di tabel karyawan
+2. seeder/data awal shift_master satpam (pagi/sore/malam)
+3. service generator jadwal satpam (idempotent)
+4. hook pemanggilan service dari proses create/update karyawan
+5. endpoint/aksi manual regenerate oleh SPV
+6. test fitur (unit + feature) untuk kasus generate, regenerate, dan skip non-satpam
+
+#acceptance criteria tahap 1
+-buat karyawan satpam baru dengan ikut_jadwal_kerja=true menghasilkan jadwal 30 hari
+-buat karyawan non-satpam tidak menghasilkan jadwal otomatis
+-regenerate tidak membuat data dobel (tetap 1 jadwal per tanggal)
+-ubah karyawan jadi nonaktif menghentikan generate lanjutan
 
