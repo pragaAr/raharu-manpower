@@ -14,7 +14,7 @@
         <img src="{{ asset('img/raharu-light.png') }}"
           alt="Logo"
           class="navbar-brand-image"
-          style="height:1.3rem;">
+          style="height:1.2rem;">
       </a>
     </h1>
 
@@ -182,16 +182,24 @@
           @endcan
 
           {{-- Permission Dropdown --}}
-          @if(auth()->user()->canAny(['role.view', 'permission.view']))
+          @if(auth()->user()->canAny(['role.view', 'permission.view', 'user.view']))
           <li class="nav-item dropdown
-          {{ in_array(request()->segment(1), ['role', 'permission']) ? 'active' : '' }}">
+          {{ in_array(request()->segment(1), ['role', 'permission', 'user']) ? 'active' : '' }}">
             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-shield-lock">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
-                  <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-                  <path d="M12 12l0 2.5" />
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" stroke="currentColor" 
+                  stroke-width="2" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-shield-lock">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+                    <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                    <path d="M12 12l0 2.5" />
                 </svg>
               </span>
               <span class="nav-link-title">Permission</span>
@@ -207,25 +215,70 @@
                 - Role
               </a>
               @endcan
+              @can('user.view')
+              <a class="dropdown-item {{ request()->segment(1) == 'user' ? 'active' : '' }}" href="{{ url('/user') }}" wire:navigate>
+                - User
+              </a>
+              @endcan
             </div>
           </li>
           @endif
 
-          {{-- User --}}
-          @can('user.view')
-          <li class="nav-item {{ request()->segment(1) == 'user' ? 'active' : '' }}">
-            <a class="nav-link" href="{{ url('/user') }}" wire:navigate>
+          {{-- Penjadwalan --}}
+          @can('penjadwalan.view')
+          <li class="nav-item {{ request()->segment(1) == 'penjadwalan' ? 'active' : '' }}">
+            <a class="nav-link" href="{{ url('/penjadwalan') }}" wire:navigate>
               <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  stroke-width="2" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-month">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+                    <path d="M16 3v4" />
+                    <path d="M8 3v4" />
+                    <path d="M4 11h16" />
+                    <path d="M8 14v4" />
+                    <path d="M12 14v4" />
+                    <path d="M16 14v4" />
                 </svg>
               </span>
               <span class="nav-link-title">
-                Users
+                Penjadwalan
+              </span>
+            </a>
+          </li>
+          @endcan
+
+          {{-- Pengajuan --}}
+          @can('pengajuan.view')
+          <li class="nav-item {{ request()->segment(1) == 'pengajuan' ? 'active' : '' }}">
+            <a class="nav-link" href="{{ url('/pengajuan') }}" wire:navigate>
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" stroke="currentColor" 
+                  stroke-width="2" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-mail-question">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M15 19h-10a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v4.5" />
+                    <path d="M19 22v.01" />
+                    <path d="M19 19a2.003 2.003 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />
+                    <path d="M3 7l9 6l9 -6" />
+                </svg>
+              </span>
+              <span class="nav-link-title">
+                Pengajuan
               </span>
             </a>
           </li>

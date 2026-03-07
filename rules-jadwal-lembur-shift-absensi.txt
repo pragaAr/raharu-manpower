@@ -1,0 +1,125 @@
+schema rules nya:
+#jabatan satpam
+-shift -> pagi sore malam
+-aktif senin-minggu
+-libur acak
+-cuti, tukar shift, dobel shift(ambil shift teman yang libur/cuti) pengajuan dulu.
+-pembuatan jadwal bisa auto generate dalam 1 bulan, bisa juga dibuat manual oleh spv
+
+#jabatan sopir kurir-kernet kurir dalam kota, mandor kurir
+-shift -> none
+-aktif senin-sabtu
+-jam aktif senin-jumat 08.00 - 16.00, sabtu 08.00 - 14.00, lebih dari jam pulang auto lembur (bisa dikoreksi mandor kurir/spv)
+-minggu/tgl merah bisa masuk dihitung lembur, spv yang membuat aproval (kondisional tergantung urgensi biasanya)
+-libur minggu
+-cuti butuh aproval
+
+#jabatan bongkar muat, mandor gudang
+-shift -> none
+-aktif senin-minggu
+-jam aktif senin-jumat 08.00 - 16.00, sabtu 08.00 - 14.00, minggu 09.00 - 15.00 lebih dari jam pulang auto lembur(general) (bisa dikoreksi mandor gudang/spv)
+-ada jadwal lembur per orang per hari (biasanya dalam 1 minggu lembur 2-3x)
+-pindah jadwal lembur/mnegisi lembur diluar ketentuan butuh aproval mandor gudang
+-libur antara senin-sabtu acak
+-jadwal lembur harian(kecuali sabtu)/libur bisa auto generate/dibuat manual oleh mandor gudang
+-jadwal libur biasanya 1x dibuat dan jarang ada perubahan
+-jadwal lembur biasanya bisa sering berubah
+-tgl merah hari besar dihitung lembur, termasuk minggu kalau hari besar
+-cuti butuh aproval
+
+#jabatan bengkel(montir, mandor bengkel)
+-shift -> none
+-aktif senin-minggu
+-jam aktif senin-jumat 08.00 - 16.00, sabtu 08.00 - 14.00, minggu 09.00 - 15.00 lebih dari jam pulang tidak auto lembur
+-ada jadwal lembur per orang per hari (biasanya dalam 1 minggu lembur 2-3x)
+-libur antara senin-minggu acak
+-jadwal lembur harian/libur bisa auto generate/dibuat manual oleh mandor bengkel
+-jadwal libur biasanya 1x dibuat dan jarang ada perubahan
+-jadwal lembur tiap bulan bisa berubah(rolling)
+-tgl merah hari besar dihitung lembur, termasuk minggu kalau hari besar
+-cuti butuh aproval
+
+#jabatan adm, customer service, pajak, it, marketing, manager, ob
+-shift -> none
+-aktif senin-sabtu
+-jam aktif senin-jumat 08.00 - 16.00, sabtu 08.00 - 14.00. lebih dari jam pulang tidak auto lembur
+-libur minggu
+-lembur wajib aproval dulu
+-cuti butuh aproval
+
+===========
+nb:
+lembur hanya menghitung waktu saja, dengan dibedakan lembur hari besar atau hari biasa
+===========
+
+schema table
+
+#work_rules
+id
+jabatan_id
+use_shift (bool)
+auto_overtime (bool)
+need_overtime_approval (bool)
+cuti_need_approval (bool)
+allow_double_shift (bool)
+allow_shift_swap (bool)
+
+#work_rule_days
+id
+work_rule_id
+day_of_week
+jam_masuk
+jam_pulang
+is_workday
+
+#shift
+id
+nama
+jam_masuk
+jam_pulang
+
+#jadwal_karyawan
+id
+karyawan_id
+tanggal
+shift_id (nullable)
+shift_nama
+jam_masuk
+jam_pulang
+is_libur
+generated_by
+
+#jadwal_lembur
+id
+karyawan_id
+tanggal
+type -> (NORMAL, HOLIDAY)
+jam_mulai
+jam_selesai
+approved_by
+created_by
+
+#holidays
+id
+tanggal
+nama
+is_national
+
+#requests
+id
+karyawan_id
+type -> (CUTI, SHIFT_SWAP, OVERTIME_CHANGE, DOUBLE_SHIFT)
+reference_id
+tanggal_mulai
+tanggal_selesai
+status
+approved_by
+
+#request_logs
+id
+request_id
+action
+actor_id
+catatan
+created_at
+
