@@ -12,8 +12,8 @@
       <div class="modal-body">
         <form wire:submit.prevent="save">
           <div class="mb-2">
-            <label class="form-label">Lokasi</label>
-            <input type="text" wire:model.defer="nama"
+            <label for="nama" class="form-label">Lokasi</label>
+            <input type="text" id="nama" wire:model.defer="nama"
               class="form-control text-uppercase @error('nama') is-invalid @enderror" autofocus autocomplete="off" placeholder="nama lokasi">
             @error('nama')
             <small class="text-danger">{{ $message }}</small>
@@ -21,24 +21,24 @@
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Kode</label>
-            <input type="text" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode lokasi">
+            <label for="kode" class="form-label">Kode</label>
+            <input type="text" id="kode" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode lokasi">
             @error('kode')
             <small class="text-danger">{{ $message }}</small>
             @enderror
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Latitude</label>
-            <input type="text" wire:model.defer="lat" class="form-control text-uppercase @error('lat') is-invalid @enderror" autocomplete="off" placeholder="Latitude lokasi">
+            <label for="lat" class="form-label">Latitude</label>
+            <input type="text" id="lat" wire:model.defer="lat" class="form-control text-uppercase @error('lat') is-invalid @enderror" autocomplete="off" placeholder="Latitude lokasi">
             @error('lat')
             <small class="text-danger">{{ $message }}</small>
             @enderror
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Longitude</label>
-            <input type="text" wire:model.defer="lng" class="form-control text-uppercase @error('lng') is-invalid @enderror" autocomplete="off" placeholder="Longitude lokasi">
+            <label for="lng" class="form-label">Longitude</label>
+            <input type="text" id="lng" wire:model.defer="lng" class="form-control text-uppercase @error('lng') is-invalid @enderror" autocomplete="off" placeholder="Longitude lokasi">
             @error('lng')
             <small class="text-danger">{{ $message }}</small>
             @enderror

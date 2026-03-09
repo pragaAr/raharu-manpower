@@ -8,7 +8,7 @@
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" class="form-control"
+        <input type="text" id="search-kategori" class="form-control"
           placeholder="Cari kategori..."
           wire:model.live.debounce.300ms="search">
       </div>

@@ -8,7 +8,7 @@
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" class="form-control"
+        <input type="text" id="search-divisi" class="form-control"
           placeholder="Cari divisi..."
           wire:model.live.debounce.300ms="search">
       </div>

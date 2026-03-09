@@ -12,8 +12,8 @@
       <div class="modal-body">
         <form wire:submit.prevent="save">
           <div class="mb-2">
-            <label class="form-label">Divisi</label>
-            <input type="text" wire:model.defer="nama"
+            <label for="nama" class="form-label">Divisi</label>
+            <input type="text" id="nama" wire:model.defer="nama"
               class="form-control text-uppercase @error('nama') is-invalid @enderror" autocomplete="off" placeholder="nama divisi" autofocus>
             @error('nama')
             <small class="text-danger">{{ $message }}</small>
@@ -21,8 +21,8 @@
           </div>
 
           <div class="mb-2">
-            <label class="form-label">Kode</label>
-            <input type="text" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode divisi">
+            <label for="kode" class="form-label">Kode</label>
+            <input type="text" id="kode" wire:model.defer="kode" class="form-control text-uppercase @error('kode') is-invalid @enderror" autocomplete="off" placeholder="kode divisi">
             @error('kode')
             <small class="text-danger">{{ $message }}</small>
             @enderror
