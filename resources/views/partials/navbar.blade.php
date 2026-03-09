@@ -73,7 +73,7 @@
     </div>
 
     <!-- Main Menu -->
-    <div class="collapse navbar-collapse" id="navbar-menu">
+  <div class="collapse navbar-collapse" id="navbar-menu">
       <div class="d-flex flex-column flex-fill align-items-stretch align-items-md-center">
         <ul class="navbar-nav">
 
@@ -103,9 +103,9 @@
           </li>
 
           {{-- Master Dropdown --}}
-          @if(auth()->user()->canAny(['lokasi.view', 'divisi.view', 'unit.view', 'jabatan.view', 'kategori.view']))
+          @if(auth()->user()->canAny(['lokasi.view', 'divisi.view', 'unit.view', 'jabatan.view', 'kategori.view', 'shift.view', 'holiday.view', 'work-rule.view', 'jadwal-kerja.view', 'jadwal-lembur.view']))
           <li class="nav-item dropdown
-          {{ in_array(request()->segment(1), ['lokasi','divisi','unit','jabatan', 'kategori']) ? 'active' : '' }}">
+          {{ in_array(request()->segment(1), ['lokasi','divisi','unit','jabatan', 'kategori', 'shift', 'holiday', 'work-rule', 'jadwal-kerja', 'jadwal-lembur']) ? 'active' : '' }}">
             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <svg xmlns="http://www.w3.org/2000/svg" 
@@ -152,6 +152,43 @@
                 - Kategori
               </a>
               @endcan
+
+              {{-- Nested: Work Config --}}
+              @if(auth()->user()->canAny(['shift.view', 'holiday.view', 'work-rule.view']))
+              <div class="dropend">
+                <a class="dropdown-item dropdown-toggle {{ in_array(request()->segment(1), ['shift','holiday','work-rule']) ? 'active' : '' }}" href="#sidebar-work-config" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  - Work Config
+                </a>
+                <div class="dropdown-menu">
+                  @can('shift.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'shift' ? 'active' : '' }}" href="{{ url('/shift') }}" wire:navigate>Shift</a>
+                  @endcan
+                  @can('holiday.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'holiday' ? 'active' : '' }}" href="{{ url('/holiday') }}" wire:navigate>Hari Libur</a>
+                  @endcan
+                  @can('work-rule.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'work-rule' ? 'active' : '' }}" href="{{ url('/work-rule') }}" wire:navigate>Aturan Kerja</a>
+                  @endcan
+                </div>
+              </div>
+              @endif
+
+              {{-- Nested: Penjadwalan --}}
+              @if(auth()->user()->canAny(['jadwal-kerja.view', 'jadwal-lembur.view']))
+              <div class="dropend">
+                <a class="dropdown-item dropdown-toggle {{ in_array(request()->segment(1), ['jadwal-kerja','jadwal-lembur']) ? 'active' : '' }}" href="#sidebar-penjadwalan" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  - Penjadwalan
+                </a>
+                <div class="dropdown-menu">
+                  @can('jadwal-kerja.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'jadwal-kerja' ? 'active' : '' }}" href="{{ url('/jadwal-kerja') }}" wire:navigate>Jadwal Kerja</a>
+                  @endcan
+                  @can('jadwal-lembur.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'jadwal-lembur' ? 'active' : '' }}" href="{{ url('/jadwal-lembur') }}" wire:navigate>Jadwal Lembur</a>
+                  @endcan
+                </div>
+              </div>
+              @endif
             </div>
           </li>
           @endif
@@ -210,6 +247,56 @@
           </li>
           @endcan
 
+          {{-- Pengajuan Dropdown --}}
+          @if(auth()->user()->canAny(['pengajuan-cuti.view', 'pengajuan-tukar-shift.view', 'pengajuan-lembur.view', 'pengajuan-double-shift.view']))
+          <li class="nav-item dropdown
+          {{ request()->segment(1) == 'pengajuan' ? 'active' : '' }}">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-file-text">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                    <path d="M9 9l1 0" />
+                    <path d="M9 13l6 0" />
+                    <path d="M9 17l6 0" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Pengajuan</span>
+            </a>
+            <div class="dropdown-menu">
+              @can('pengajuan-cuti.view')
+              <a class="dropdown-item {{ request()->segment(2) == 'cuti' ? 'active' : '' }}" href="{{ url('/pengajuan/cuti') }}" wire:navigate>
+                - Cuti
+              </a>
+              @endcan
+              @can('pengajuan-tukar-shift.view')
+              <a class="dropdown-item {{ request()->segment(2) == 'tukar-shift' ? 'active' : '' }}" href="{{ url('/pengajuan/tukar-shift') }}" wire:navigate>
+                - Tukar Shift
+              </a>
+              @endcan
+              @can('pengajuan-lembur.view')
+              <a class="dropdown-item {{ request()->segment(2) == 'perubahan-lembur' ? 'active' : '' }}" href="{{ url('/pengajuan/perubahan-lembur') }}" wire:navigate>
+                - Perubahan Lembur
+              </a>
+              @endcan
+              @can('pengajuan-double-shift.view')
+              <a class="dropdown-item {{ request()->segment(2) == 'double-shift' ? 'active' : '' }}" href="{{ url('/pengajuan/double-shift') }}" wire:navigate>
+                - Double Shift
+              </a>
+              @endcan
+            </div>
+          </li>
+          @endif
+
           {{-- Permission Dropdown --}}
           @if(auth()->user()->canAny(['role.view', 'permission.view', 'user.view']))
           <li class="nav-item dropdown
@@ -252,71 +339,6 @@
             </div>
           </li>
           @endif
-
-          {{-- Penjadwalan --}}
-          @can('penjadwalan.view')
-          <li class="nav-item {{ request()->segment(1) == 'penjadwalan' ? 'active' : '' }}">
-            <a class="nav-link" href="{{ url('/penjadwalan') }}" wire:navigate>
-              <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" stroke="currentColor" 
-                  stroke-width="2" 
-                  stroke-linecap="round" 
-                  stroke-linejoin="round" 
-                  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-week">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
-                    <path d="M16 3v4" />
-                    <path d="M8 3v4" />
-                    <path d="M4 11h16" />
-                    <path d="M7 14h.013" />
-                    <path d="M10.01 14h.005" />
-                    <path d="M13.01 14h.005" />
-                    <path d="M16.015 14h.005" />
-                    <path d="M13.015 17h.005" />
-                    <path d="M7.01 17h.005" />
-                    <path d="M10.01 17h.005" />
-                </svg>
-              </span>
-              <span class="nav-link-title">
-                Penjadwalan
-              </span>
-            </a>
-          </li>
-          @endcan
-
-          {{-- Pengajuan --}}
-          @can('pengajuan.view')
-          <li class="nav-item {{ request()->segment(1) == 'pengajuan' ? 'active' : '' }}">
-            <a class="nav-link" href="{{ url('/pengajuan') }}" wire:navigate>
-              <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" stroke="currentColor" 
-                  stroke-width="2" 
-                  stroke-linecap="round" 
-                  stroke-linejoin="round" 
-                  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-question">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M15 21h-9a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
-                    <path d="M16 3v4" />
-                    <path d="M8 3v4" />
-                    <path d="M4 11h16" />
-                    <path d="M19 22v.01" />
-                    <path d="M19 19a2.003 2.003 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />
-                </svg>
-              </span>
-              <span class="nav-link-title">
-                Pengajuan
-              </span>
-            </a>
-          </li>
-          @endcan
 
         </ul>
       </div>
