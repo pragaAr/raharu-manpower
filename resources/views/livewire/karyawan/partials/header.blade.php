@@ -10,6 +10,7 @@
         <a
           x-data="{ isLoading: false }"
           href="{{ $backUrl }}"
+          wire:navigate
           @click="isLoading = true"
           class="btn btn-dark btn-sm-custom">
 

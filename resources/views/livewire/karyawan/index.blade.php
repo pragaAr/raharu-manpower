@@ -48,7 +48,7 @@
         @can('karyawan.mutasi')
         <a
           x-data="{ isLoading: false }"
-          :href="'{{ route('karyawan.mutasi') }}?back=' + btoa(window.location.href)"
+          :href="'{{ route('karyawan.mutasi') }}?back=' + encodeURIComponent(btoa(window.location.href))"
           @click="isLoading = true"
           wire:navigate
           class="btn btn-danger btn-sm-custom">
@@ -82,7 +82,7 @@
         @can('karyawan.renewal')
         <a
           x-data="{ isLoading: false }"
-          :href="'{{ route('karyawan.renewal') }}?back=' + btoa(window.location.href)"
+          :href="'{{ route('karyawan.renewal') }}?back=' + encodeURIComponent(btoa(window.location.href))"
           @click="isLoading = true"
           wire:navigate
           class="btn btn-success btn-sm-custom">
@@ -118,7 +118,7 @@
         @can('karyawan.create')
         <a
           x-data="{ isLoading: false }"
-          :href="'{{ route('karyawan.create') }}?back=' + btoa(window.location.href)"
+          :href="'{{ route('karyawan.create') }}?back=' + encodeURIComponent(btoa(window.location.href))"
           @click="isLoading = true"
           wire:navigate
           class="btn btn-primary btn-sm-custom">
@@ -279,7 +279,7 @@
                   </button>
                   @endcan
                   @can('karyawan.detail')
-                  <a x-data="{ isLoading: false }" :href="'{{ route('karyawan.detail', $row->nik) }}?back=' + btoa(window.location.href)" @click="isLoading = true" wire:navigate title="Detail" class="btn btn-info btn-sm">
+                  <a x-data="{ isLoading: false }" :href="'{{ route('karyawan.detail', $row->nik) }}?back=' + encodeURIComponent(btoa(window.location.href))" @click="isLoading = true" wire:navigate title="Detail" class="btn btn-info btn-sm">
                    <span x-show="isLoading" class="spinner-border spinner-border-sm" style="display: none;"></span>
                    <svg x-show="!isLoading" xmlns="http://www.w3.org/2000/svg" 
                     style="width: 18px; height: 18px;" 

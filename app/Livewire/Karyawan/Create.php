@@ -80,7 +80,11 @@ class Create extends Component
       'nama'
     ]);
 
-    $this->backUrl = request('back') ? base64_decode(request('back')) : route('karyawan.index');
+    $encodedBack = request('back');
+    $decodedBack = $encodedBack ? base64_decode($encodedBack, true) : false;
+    $this->backUrl = is_string($decodedBack) && filter_var($decodedBack, FILTER_VALIDATE_URL)
+      ? $decodedBack
+      : route('karyawan.index');
   }
 
   public function render()
