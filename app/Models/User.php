@@ -36,6 +36,36 @@ class User extends Authenticatable
     return $this->hasMany(Absensi::class, 'input_by');
   }
 
+  public function approvedJadwalLemburs()
+  {
+    return $this->hasMany(JadwalLembur::class, 'approved_by', 'id');
+  }
+
+  public function approvedCutiRequests()
+  {
+    return $this->hasMany(CutiRequest::class, 'approved_by', 'id');
+  }
+
+  public function approvedTukarShiftRequests()
+  {
+    return $this->hasMany(TukarShiftRequest::class, 'approved_by', 'id');
+  }
+
+  public function approvedPerubahanLemburRequests()
+  {
+    return $this->hasMany(PerubahanLemburRequest::class, 'approved_by', 'id');
+  }
+
+  public function approvedDoubleShiftRequests()
+  {
+    return $this->hasMany(DoubleShiftRequest::class, 'approved_by', 'id');
+  }
+
+  public function requestLogs()
+  {
+    return $this->hasMany(RequestLog::class, 'actor_id', 'id');
+  }
+
   public function lokasiId(): ?int
   {
     return $this->karyawan?->lokasi_id;

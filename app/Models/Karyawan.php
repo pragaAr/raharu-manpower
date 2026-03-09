@@ -33,8 +33,6 @@ class Karyawan extends Model
     'tgl_penetapan',
     'img',
     'status',
-    'ikut_jadwal_kerja',
-    'ikut_jadwal_lembur',
   ];
 
   protected $casts = [
@@ -43,8 +41,6 @@ class Karyawan extends Model
     'tgl_efektif'       => 'date',
     'tgl_keluar'        => 'date',
     'tgl_penetapan'     => 'date',
-    'ikut_jadwal_kerja' => 'boolean',
-    'ikut_jadwal_lembur' => 'boolean',
   ];
 
   public function kategori()
@@ -60,6 +56,11 @@ class Karyawan extends Model
   public function jabatan()
   {
     return $this->belongsTo(Jabatan::class, 'jabatan_id', 'id');
+  }
+
+  public function workRule()
+  {
+    return $this->hasOne(WorkRule::class, 'jabatan_id', 'jabatan_id');
   }
 
   public function kontraks()
@@ -86,6 +87,47 @@ class Karyawan extends Model
   {
     return $this->hasOne(Absensi::class)
       ->whereDate('tanggal', now()->toDateString());
+  }
+
+  public function jadwalKaryawans()
+  {
+    return $this->hasMany(JadwalKaryawan::class, 'karyawan_id', 'id');
+  }
+
+  public function jadwalHariIni()
+  {
+    return $this->hasOne(JadwalKaryawan::class, 'karyawan_id', 'id')
+      ->whereDate('tanggal', now()->toDateString());
+  }
+
+  public function jadwalLemburs()
+  {
+    return $this->hasMany(JadwalLembur::class, 'karyawan_id', 'id');
+  }
+
+  public function cutiRequests()
+  {
+    return $this->hasMany(CutiRequest::class, 'karyawan_id', 'id');
+  }
+
+  public function tukarShiftRequestsAsRequester()
+  {
+    return $this->hasMany(TukarShiftRequest::class, 'requester_id', 'id');
+  }
+
+  public function tukarShiftRequestsAsTarget()
+  {
+    return $this->hasMany(TukarShiftRequest::class, 'target_karyawan_id', 'id');
+  }
+
+  public function perubahanLemburRequests()
+  {
+    return $this->hasMany(PerubahanLemburRequest::class, 'karyawan_id', 'id');
+  }
+
+  public function doubleShiftRequests()
+  {
+    return $this->hasMany(DoubleShiftRequest::class, 'karyawan_id', 'id');
   }
 
   public function getUsiaAttribute()

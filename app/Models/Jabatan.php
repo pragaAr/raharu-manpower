@@ -22,4 +22,9 @@ class Jabatan extends Model
   {
     return $this->hasMany(Karyawan::class, 'jabatan_id', 'id');
   }
+
+  public function workRule()
+  {
+    return $this->hasOne(WorkRule::class, 'jabatan_id', 'id');
+  }
 }
