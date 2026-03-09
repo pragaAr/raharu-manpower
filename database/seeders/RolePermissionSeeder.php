@@ -55,12 +55,66 @@ class RolePermissionSeeder extends Seeder
       ['name' => 'jabatan.edit', 'label' => 'Ubah Jabatan'],
       ['name' => 'jabatan.delete', 'label' => 'Hapus Jabatan'],
 
+      // Shift
+      ['name' => 'shift.view', 'label' => 'Lihat Data Shift'],
+      ['name' => 'shift.create', 'label' => 'Tambah Shift'],
+      ['name' => 'shift.edit', 'label' => 'Ubah Shift'],
+      ['name' => 'shift.delete', 'label' => 'Hapus Shift'],
+
+      // Holiday
+      ['name' => 'holiday.view', 'label' => 'Lihat Data Hari Libur'],
+      ['name' => 'holiday.create', 'label' => 'Tambah Hari Libur'],
+      ['name' => 'holiday.edit', 'label' => 'Ubah Hari Libur'],
+      ['name' => 'holiday.delete', 'label' => 'Hapus Hari Libur'],
+
+      // Work Rule
+      ['name' => 'work-rule.view', 'label' => 'Lihat Data Aturan Kerja'],
+      ['name' => 'work-rule.create', 'label' => 'Tambah Aturan Kerja'],
+      ['name' => 'work-rule.edit', 'label' => 'Ubah Aturan Kerja'],
+      ['name' => 'work-rule.delete', 'label' => 'Hapus Aturan Kerja'],
+
+      // Jadwal Kerja
+      ['name' => 'jadwal-kerja.view', 'label' => 'Lihat Data Jadwal Kerja'],
+      ['name' => 'jadwal-kerja.create', 'label' => 'Tambah Jadwal Kerja'],
+      ['name' => 'jadwal-kerja.edit', 'label' => 'Ubah Jadwal Kerja'],
+      ['name' => 'jadwal-kerja.delete', 'label' => 'Hapus Jadwal Kerja'],
+
+      // Jadwal Lembur
+      ['name' => 'jadwal-lembur.view', 'label' => 'Lihat Data Jadwal Lembur'],
+      ['name' => 'jadwal-lembur.create', 'label' => 'Tambah Jadwal Lembur'],
+      ['name' => 'jadwal-lembur.edit', 'label' => 'Ubah Jadwal Lembur'],
+      ['name' => 'jadwal-lembur.delete', 'label' => 'Hapus Jadwal Lembur'],
+
       // Absensi
       ['name' => 'absensi.view', 'label' => 'Lihat Data Absensi'],
       ['name' => 'absensi.create', 'label' => 'Tambah Absensi'],
       ['name' => 'absensi.edit', 'label' => 'Ubah Absensi'],
       ['name' => 'absensi.delete', 'label' => 'Hapus Absensi'],
       ['name' => 'absensi.detail', 'label' => 'Lihat Detail Absensi'],
+
+      // Pengajuan Cuti
+      ['name' => 'pengajuan-cuti.view', 'label' => 'Lihat Pengajuan Cuti'],
+      ['name' => 'pengajuan-cuti.create', 'label' => 'Tambah Pengajuan Cuti'],
+      ['name' => 'pengajuan-cuti.edit', 'label' => 'Ubah Pengajuan Cuti'],
+      ['name' => 'pengajuan-cuti.delete', 'label' => 'Hapus Pengajuan Cuti'],
+
+      // Pengajuan Tukar Shift
+      ['name' => 'pengajuan-tukar-shift.view', 'label' => 'Lihat Pengajuan Tukar Shift'],
+      ['name' => 'pengajuan-tukar-shift.create', 'label' => 'Tambah Pengajuan Tukar Shift'],
+      ['name' => 'pengajuan-tukar-shift.edit', 'label' => 'Ubah Pengajuan Tukar Shift'],
+      ['name' => 'pengajuan-tukar-shift.delete', 'label' => 'Hapus Pengajuan Tukar Shift'],
+
+      // Pengajuan Perubahan Lembur
+      ['name' => 'pengajuan-lembur.view', 'label' => 'Lihat Pengajuan Perubahan Lembur'],
+      ['name' => 'pengajuan-lembur.create', 'label' => 'Tambah Pengajuan Perubahan Lembur'],
+      ['name' => 'pengajuan-lembur.edit', 'label' => 'Ubah Pengajuan Perubahan Lembur'],
+      ['name' => 'pengajuan-lembur.delete', 'label' => 'Hapus Pengajuan Perubahan Lembur'],
+
+      // Pengajuan Double Shift
+      ['name' => 'pengajuan-double-shift.view', 'label' => 'Lihat Pengajuan Double Shift'],
+      ['name' => 'pengajuan-double-shift.create', 'label' => 'Tambah Pengajuan Double Shift'],
+      ['name' => 'pengajuan-double-shift.edit', 'label' => 'Ubah Pengajuan Double Shift'],
+      ['name' => 'pengajuan-double-shift.delete', 'label' => 'Hapus Pengajuan Double Shift'],
 
       // User Management
       ['name' => 'user.view', 'label' => 'Lihat Data User'],
@@ -105,7 +159,16 @@ class RolePermissionSeeder extends Seeder
       'divisi.view',
       'unit.view',
       'jabatan.view',
+      'shift.view',
+      'holiday.view',
+      'work-rule.view',
+      'jadwal-kerja.view',
+      'jadwal-lembur.view',
       'absensi.view',
+      'pengajuan-cuti.view',
+      'pengajuan-tukar-shift.view',
+      'pengajuan-lembur.view',
+      'pengajuan-double-shift.view',
     ]);
   }
 }

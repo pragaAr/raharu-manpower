@@ -1,0 +1,196 @@
+<div>
+
+  {{-- HEADER PAGE --}}
+  @include('components.partials.header', ['title' => $title, 'permission' => 'jadwal-lembur.create'])
+
+  {{-- TABLE --}}
+  <div class="card">
+    <div class="card-body border-bottom py-3">
+
+      <div class="mb-3">
+        <input type="text"
+          id="search-jadwal-lembur"
+          class="form-control"
+          placeholder="Cari jadwal lembur..."
+          wire:model.live.debounce.300ms="search">
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-vcenter table-bordered">
+          <thead>
+            <tr>
+              <th class="fs-5 text-center" style="width:8%">#</th>
+              <th class="fs-5">Tanggal</th>
+              <th class="fs-5">Karyawan</th>
+              <th class="fs-5 text-center">Tipe</th>
+              <th class="fs-5 text-center">Jam</th>
+              <th class="fs-5 text-center">Status</th>
+              <th class="fs-5">Approver</th>
+              @if($hasActions)
+              <th class="fs-5 text-center">Aksi</th>
+              @endif
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($data as $i => $row)
+            <tr wire:key="{{ $row->id }}">
+              <td class="text-center">{{ $data->firstItem() + $i }}.</td>
+              <td>{{ $row->tanggal?->format('d-m-Y') ?? '-' }}</td>
+              <td class="text-uppercase">
+                <div class="fw-semibold">{{ $row->karyawan->nik ?? '-' }}</div>
+                <div class="text-muted">{{ $row->karyawan->nama ?? '-' }}</div>
+              </td>
+              <td class="text-center text-uppercase">{{ $row->type }}</td>
+              <td class="text-center">{{ $row->jam_mulai?->format('H:i') ?? '-' }} - {{ $row->jam_selesai?->format('H:i') ?? '-' }}</td>
+              <td class="text-center text-uppercase">{{ $row->status }}</td>
+              <td>
+                <div class="text-uppercase">{{ $row->approver->username ?? '-' }}</div>
+                <small class="text-muted">{{ $row->approved_at?->format('d-m-Y H:i') ?? '-' }}</small>
+              </td>
+              @if($hasActions)
+              <td class="text-center">
+                <div class="btn-group" role="group" style="gap: 3px;">
+                  @can('jadwal-lembur.edit')
+                  <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
+                    wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
+                    <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
+                    <svg wire:loading.remove wire:target="edit({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
+                      style="width: 18px; height: 18px;"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit me-0">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+                      <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+                      <path d="M16 5l3 3" />
+                    </svg>
+                  </button>
+                  @endcan
+                  @can('jadwal-lembur.delete')
+                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
+                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
+                    <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
+                      style="width: 18px; height: 18px;"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-trash me-0">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M4 7l16 0" />
+                      <path d="M10 11l0 6" />
+                      <path d="M14 11l0 6" />
+                      <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                      <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                    </svg>
+                  </button>
+                  @endcan
+                </div>
+              </td>
+              @endif
+            </tr>
+            @empty
+            <tr>
+              <td colspan="{{ $hasActions ? 8 : 7 }}" class="text-center text-muted">Belum ada data.</td>
+            </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-3 px-2">
+        {{ $data->links() }}
+      </div>
+
+    </div>
+  </div>
+
+  {{-- MODAL --}}
+  @include('livewire.master.jadwal-lembur-modal')
+  @include('components.modal.confirm')
+
+</div>
+
+@push('scripts')
+<script>
+  window.__plugins = window.__plugins || {}
+
+  document.addEventListener('livewire:navigated', () => {
+    const modalEl = document.getElementById('addEditModal');
+    const modalConfirm = document.getElementById('confirmModal');
+
+    blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.jadwalLembur =
+      createTomSelectGroup('#jadwal-lembur-form', [
+        {
+          selectId: 'jadwal-lembur-karyawanSelect',
+          errorId: 'jadwal-lembur-karyawanError',
+          hiddenInputId: 'jadwal-lembur-karyawanHidden',
+          placeholder: 'Pilih Karyawan..'
+        },
+        {
+          selectId: 'jadwal-lembur-approverSelect',
+          errorId: 'jadwal-lembur-approverError',
+          hiddenInputId: 'jadwal-lembur-approverHidden',
+          placeholder: 'Pilih Approver..'
+        }
+      ])
+  })
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.jadwalLembur?.destroy()
+    delete window.__plugins.jadwalLembur
+  })
+
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.jadwalLembur;
+    if (!ts) return;
+
+    if (Array.isArray(payload.karyawan_options)) {
+      ts.refresh('jadwal-lembur-karyawanSelect', payload.karyawan_options, (item) => {
+        const nik = String(item.nik ?? '').toUpperCase();
+        const nama = String(item.nama ?? '').toUpperCase();
+        return [nik, nama].filter(Boolean).join(' - ');
+      });
+    }
+
+    if (Array.isArray(payload.approver_options)) {
+      ts.refresh('jadwal-lembur-approverSelect', payload.approver_options, (item) => {
+        const username = String(item.username ?? '').toUpperCase();
+        const nama = String(item.nama ?? '').toUpperCase();
+        return [username, nama].filter(Boolean).join(' - ');
+      });
+    }
+
+    if (payload.karyawan_id) {
+      ts.clear('jadwal-lembur-karyawanSelect');
+      ts.setValue('jadwal-lembur-karyawanSelect', payload.karyawan_id);
+    } else {
+      ts.clear('jadwal-lembur-karyawanSelect');
+    }
+
+    if (payload.approved_by) {
+      ts.clear('jadwal-lembur-approverSelect');
+      ts.setValue('jadwal-lembur-approverSelect', payload.approved_by);
+    } else {
+      ts.clear('jadwal-lembur-approverSelect');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.jadwalLembur?.reset();
+  });
+
+  Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
+  Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+</script>
+@endpush

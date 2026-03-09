@@ -60,4 +60,22 @@ class JadwalLembur extends Model
   {
     return $this->hasMany(PerubahanLemburRequest::class, 'jadwal_lembur_id', 'id');
   }
+
+  public static function typeList(): array
+  {
+    return [
+      self::TYPE_NORMAL,
+      self::TYPE_HOLIDAY,
+    ];
+  }
+
+  public static function statusList(): array
+  {
+    return [
+      self::STATUS_PENDING,
+      self::STATUS_APPROVED,
+      self::STATUS_REJECTED,
+      self::STATUS_CANCELLED,
+    ];
+  }
 }

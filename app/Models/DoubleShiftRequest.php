@@ -48,4 +48,14 @@ class DoubleShiftRequest extends Model
   {
     return $this->belongsTo(User::class, 'approved_by', 'id');
   }
+
+  public static function statusList(): array
+  {
+    return [
+      self::STATUS_PENDING,
+      self::STATUS_APPROVED,
+      self::STATUS_REJECTED,
+      self::STATUS_CANCELLED,
+    ];
+  }
 }

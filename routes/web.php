@@ -18,12 +18,24 @@ use App\Livewire\Absensi\{
   Index as AbsensiIndex
 };
 
+use App\Livewire\Pengajuan\{
+  Cuti as PengajuanCuti,
+  TukarShift as PengajuanTukarShift,
+  PerubahanLembur as PengajuanPerubahanLembur,
+  DoubleShift as PengajuanDoubleShift
+};
+
 use App\Livewire\Master\{
   Lokasi,
   Unit,
   Divisi,
   Jabatan,
-  Kategori
+  Kategori,
+  Shift,
+  Holiday,
+  WorkRule,
+  JadwalKerja,
+  JadwalLembur
 };
 
 use App\Livewire\Access\{
@@ -82,6 +94,15 @@ Route::middleware(['auth', 'can:web.access'])->group(function () {
     Route::get('/kategori', Kategori::class)
       ->name('kategori.index')
       ->middleware('can:kategori.view');
+    Route::get('/shift', Shift::class)
+      ->name('shift.index')
+      ->middleware('can:shift.view');
+    Route::get('/holiday', Holiday::class)
+      ->name('holiday.index')
+      ->middleware('can:holiday.view');
+    Route::get('/work-rule', WorkRule::class)
+      ->name('work-rule.index')
+      ->middleware('can:work-rule.view');
   });
 
   // System Management
@@ -134,5 +155,34 @@ Route::middleware(['auth', 'can:web.access'])->group(function () {
     Route::get('/', AbsensiIndex::class)
       ->name('absensi')
       ->middleware('can:absensi.view');
+  });
+
+  // Penjadwalan
+  Route::group([], function () {
+    Route::get('/jadwal-kerja', JadwalKerja::class)
+      ->name('jadwal-kerja.index')
+      ->middleware('can:jadwal-kerja.view');
+    Route::get('/jadwal-lembur', JadwalLembur::class)
+      ->name('jadwal-lembur.index')
+      ->middleware('can:jadwal-lembur.view');
+  });
+
+  // Pengajuan
+  Route::prefix('pengajuan')->name('pengajuan.')->group(function () {
+    Route::get('/cuti', PengajuanCuti::class)
+      ->name('cuti.index')
+      ->middleware('can:pengajuan-cuti.view');
+
+    Route::get('/tukar-shift', PengajuanTukarShift::class)
+      ->name('tukar-shift.index')
+      ->middleware('can:pengajuan-tukar-shift.view');
+
+    Route::get('/perubahan-lembur', PengajuanPerubahanLembur::class)
+      ->name('perubahan-lembur.index')
+      ->middleware('can:pengajuan-lembur.view');
+
+    Route::get('/double-shift', PengajuanDoubleShift::class)
+      ->name('double-shift.index')
+      ->middleware('can:pengajuan-double-shift.view');
   });
 });
