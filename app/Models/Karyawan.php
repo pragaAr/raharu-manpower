@@ -33,14 +33,18 @@ class Karyawan extends Model
     'tgl_penetapan',
     'img',
     'status',
+    'ikut_jadwal_kerja',
+    'ikut_jadwal_lembur',
   ];
 
   protected $casts = [
-    'tgl_lahir'     => 'date',
-    'tgl_masuk'     => 'date',
-    'tgl_efektif'   => 'date',
-    'tgl_keluar'    => 'date',
-    'tgl_penetapan' => 'date',
+    'tgl_lahir'         => 'date',
+    'tgl_masuk'         => 'date',
+    'tgl_efektif'       => 'date',
+    'tgl_keluar'        => 'date',
+    'tgl_penetapan'     => 'date',
+    'ikut_jadwal_kerja' => 'boolean',
+    'ikut_jadwal_lembur' => 'boolean',
   ];
 
   public function kategori()

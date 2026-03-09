@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
       KaryawanSeeder::class,
       RolePermissionSeeder::class,
       UserSeeder::class,
+      ShiftMasterSeeder::class,
+      WorkRuleSeeder::class,
+      HolidaySeeder::class,
     ]);
   }
 }

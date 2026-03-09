@@ -61,7 +61,6 @@ schema table
 #work_rule
 id
 jabatan_id
-type -> (shift, rule, hybrid)
 use_shift (bool)
 auto_overtime (bool)
 overtime_need_approval (bool)
@@ -151,7 +150,8 @@ id
 requester_id (karyawan_id pemohon)
 target_karyawan_id (karyawan partner tukar shift)
 tanggal
-jadwal_karyawan_id
+requester_jadwal_id
+target_jadwal_id
 catatan
 status
 approved_by (nullable)
@@ -272,3 +272,9 @@ plan implementasi (tahap awal: autogenerate jadwal satpam saja)
 -regenerate tidak membuat data dobel (tetap 1 jadwal per tanggal)
 -ubah karyawan jadi nonaktif menghentikan generate lanjutan
 
+
+auto lembur akan dihitung berdasarkan jam pulang karyawan dengan work_rule auto_overtime=true dan work_rule_days jam_pulang
+
+libur satpam bisa diatur manual oleh spv, tapi harus ada minimal libur per bulan (4 hari) dan tidak boleh lebih dari 2 hari berturut-turut (bisa diatur di config) tidak ada 2 satpam yang libur di hari yang sama
+
+untuk holiday bisa diatur manual oleh spv dan sync api thirdparty (bisa diatur di config)
