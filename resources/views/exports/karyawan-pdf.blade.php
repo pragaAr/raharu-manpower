@@ -77,21 +77,21 @@
       @foreach($data as $index => $item)
       <tr>
         <td class="center">{{ $index + 1 }}</td>
-        <td>{{ strtoupper($item->nik) }}</td>
+        <td class="center">{{ strtoupper($item->nik) }}</td>
         <td>{{ ucwords($item->nama) }}</td>
-        <td>{{ $item->ktp }}</td>
-        <td>{{ ucwords($item->jabatan->nama ?? '-') }}</td>
-        <td>{{ ucwords($item->jabatan->unit->divisi->nama ?? '-') }}</td>
-        <td>{{ ucwords($item->lokasi->nama ?? '-') }}</td>
-        <td>{{ strtoupper($item->kategori->nama ?? '-') }}</td>
-        <td>{{ ucwords($item->agama) }}</td>
-        <td>{{ ucwords($item->jenis_kelamin) }}</td>
-        <td>{{ ucwords($item->telpon) }}</td>
-        <td>{{ date('d-m-Y', strtotime($item->tgl_lahir)) }}</td>
-        <td>{{ $item->usia }} th</td>
-        <td>{{ strtoupper($item->pendidikan) }}</td>
-        <td>{{ ucwords($item->marital) }}</td>
-        <td>{{ $item->tgl_masuk ? date('d-m-Y', strtotime($item->tgl_masuk)) : '-' }}</td>
+        <td class="center">{{ $item->ktp }}</td>
+        <td class="center">{{ ucwords($item->jabatan->nama ?? '-') }}</td>
+        <td class="center">{{ ucwords($item->jabatan->unit->divisi->nama ?? '-') }}</td>
+        <td class="center">{{ ucwords($item->lokasi->nama ?? '-') }}</td>
+        <td class="center">{{ strtoupper($item->kategori->nama ?? '-') }}</td>
+        <td class="center">{{ ucwords($item->agama) }}</td>
+        <td class="center">{{ ucwords($item->jenis_kelamin) }}</td>
+        <td class="center">{{ ucwords($item->telpon) }}</td>
+        <td class="center">{{ date('d-m-Y', strtotime($item->tgl_lahir)) }}</td>
+        <td class="center">{{ $item->usia }} th</td>
+        <td class="center">{{ strtoupper($item->pendidikan) }}</td>
+        <td class="center">{{ ucwords($item->marital) }}</td>
+        <td class="center">{{ $item->tgl_masuk ? date('d-m-Y', strtotime($item->tgl_masuk)) : '-' }}</td>
       </tr>
       @endforeach
     </tbody>

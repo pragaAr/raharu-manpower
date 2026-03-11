@@ -6,7 +6,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfExporter
 {
-  public function __construct(protected KaryawanService $service) {}
+  public function __construct(protected BaseData $service) {}
 
   protected function imageToBase64(string $path): string
   {
