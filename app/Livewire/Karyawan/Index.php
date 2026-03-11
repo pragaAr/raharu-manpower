@@ -3,6 +3,7 @@
 namespace App\Livewire\Karyawan;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Arr;
 
 use Livewire\{
   Component,
@@ -77,8 +78,42 @@ class Index extends Component
     'sampai'    => ['except' => null],
   ];
 
+  private function nullIfBlank(mixed $value): mixed
+  {
+    return blank($value) ? null : $value;
+  }
+
+  public function hydrate()
+  {
+    foreach (['status', 'kategori', 'lokasi', 'divisi', 'dari', 'sampai'] as $property) {
+      if (blank($this->{$property} ?? null)) {
+        $this->{$property} = null;
+      }
+    }
+  }
+
   public function mount()
   {
+    $incomingQuery = request()->query();
+    $cleanQuery = $incomingQuery;
+
+    foreach ($this->allowedQuery as $key) {
+      if (array_key_exists($key, $cleanQuery) && blank($cleanQuery[$key])) {
+        unset($cleanQuery[$key]);
+      }
+    }
+
+    if ($cleanQuery !== $incomingQuery) {
+      $url = request()->url();
+
+      if ($cleanQuery) {
+        $url .= '?' . Arr::query($cleanQuery);
+      }
+
+      $this->redirect($url, navigate: true);
+      return;
+    }
+
     $this->kategoris = Kategori::orderBy('nama')->get(['id', 'nama']);
     $this->lokasis   = Lokasi::orderBy('nama')->get(['id', 'nama']);
     $this->divisis   = Divisi::orderBy('nama')->get(['id', 'nama']);
@@ -142,15 +177,17 @@ class Index extends Component
 
   public function filter()
   {
-    $this->status   = $this->draft['status'] === 'aktif'
-      ? null
-      : $this->draft['status'];
+    $draftStatus = $this->draft['status'] ?? 'aktif';
 
-    $this->kategori = $this->draft['kategori_id'];
-    $this->lokasi   = $this->draft['lokasi_id'];
-    $this->divisi   = $this->draft['divisi_id'];
-    $this->dari     = $this->draft['tgl_masuk_start'];
-    $this->sampai   = $this->draft['tgl_masuk_end'];
+    $this->status = ($draftStatus === 'aktif' || blank($draftStatus))
+      ? null
+      : $draftStatus;
+
+    $this->kategori = $this->nullIfBlank($this->draft['kategori_id'] ?? null);
+    $this->lokasi   = $this->nullIfBlank($this->draft['lokasi_id'] ?? null);
+    $this->divisi   = $this->nullIfBlank($this->draft['divisi_id'] ?? null);
+    $this->dari     = $this->nullIfBlank($this->draft['tgl_masuk_start'] ?? null);
+    $this->sampai   = $this->nullIfBlank($this->draft['tgl_masuk_end'] ?? null);
 
     $this->dispatch('closeFilter');
     $this->resetPage();
