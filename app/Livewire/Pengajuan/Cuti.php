@@ -2,15 +2,26 @@
 
 namespace App\Livewire\Pengajuan;
 
-use App\Models\CutiRequest as CutiRequestModel;
-use App\Models\Karyawan;
-use App\Models\User;
-use App\Services\Pengajuan\CutiRequestService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+use Livewire\{
+  Component,
+  WithPagination
+};
+
+use App\Models\{
+  CutiRequest as CutiRequestModel,
+  Karyawan,
+  User
+};
+
+use App\Services\Pengajuan\CutiRequestService;
 use Illuminate\Validation\Rule;
-use Livewire\Attributes\Title;
-use Livewire\Component;
-use Livewire\WithPagination;
+
+use Livewire\Attributes\{
+  Title,
+  On
+};
 
 #[Title('Pengajuan Cuti')]
 class Cuti extends Component
