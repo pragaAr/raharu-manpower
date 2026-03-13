@@ -18,6 +18,9 @@
   <script data-navigate-once>
     let isSessionExpired = false;
     let notificationAbortController = null;
+    let notificationPollerId = null;
+
+    const NOTIFICATION_POLL_MS = 60 * 60 * 1000;
 
     const sessionExpiredRedirectUrl = '/login?reason=session-expired';
 
@@ -100,6 +103,11 @@
       isSessionExpired = true;
       window.__sessionExpired = true;
 
+      if (notificationPollerId) {
+        clearInterval(notificationPollerId);
+        notificationPollerId = null;
+      }
+
       if (notificationAbortController) {
         notificationAbortController.abort();
         notificationAbortController = null;
@@ -132,12 +140,43 @@
           }
         });
       });
+
+      startNotificationPolling();
     });
 
-    document.addEventListener('livewire:navigated', () => {
+    document.addEventListener('visibilitychange', () => {
       if (isSessionExpired) return;
+      if (document.hidden) {
+        stopNotificationPolling();
+        return;
+      }
+      startNotificationPolling();
+    });
+
+    document.addEventListener('shown.bs.dropdown', (event) => {
+      if (isSessionExpired) return;
+      const trigger = event?.target;
+      if (!(trigger instanceof Element)) return;
+      if (trigger.id !== 'notificationDropdown') return;
       fetchNotifications();
     });
+
+    function startNotificationPolling() {
+      if (notificationPollerId || isSessionExpired) return;
+
+      fetchNotifications();
+
+      notificationPollerId = window.setInterval(() => {
+        if (isSessionExpired || document.hidden) return;
+        fetchNotifications();
+      }, NOTIFICATION_POLL_MS);
+    }
+
+    function stopNotificationPolling() {
+      if (!notificationPollerId) return;
+      clearInterval(notificationPollerId);
+      notificationPollerId = null;
+    }
 
     async function fetchNotifications() {
       if (isSessionExpired) return;

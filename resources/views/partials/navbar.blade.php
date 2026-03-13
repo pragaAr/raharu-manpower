@@ -30,7 +30,7 @@
 
       <!-- Notification -->
       <div class="nav-item dropdown me-3">
-        <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+        <a href="#" id="notificationDropdown" class="nav-link px-0" data-bs-toggle="dropdown" data-bs-auto-close="outside">
           <svg xmlns="http://www.w3.org/2000/svg" 
             class="icon" 
             width="24" 
