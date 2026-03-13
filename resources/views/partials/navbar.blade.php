@@ -9,6 +9,7 @@
     </button>
 
     <!-- Logo -->
+    @persist('navbar-logo')
     <h1 class="navbar-brand navbar-brand-autodark d-none d-md-block pe-0 pe-md-3">
       <a href="{{ url('/home') }}" wire:navigate>
         <img src="{{ asset('img/raharu-light.png') }}"
@@ -17,6 +18,7 @@
           style="height:1.2rem; object-fit: contain; max-width: none;">
       </a>
     </h1>
+    @endpersist
 
     <!-- Right Menu -->
     <div class="navbar-nav flex-row order-md-last">
