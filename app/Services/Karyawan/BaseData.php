@@ -6,7 +6,8 @@ use App\Models\{
   Kategori,
   Lokasi,
   Divisi,
-  Karyawan
+  Karyawan,
+  Jabatan
 };
 
 use Illuminate\Database\Eloquent\Builder;
@@ -65,6 +66,21 @@ class BaseData
             $sub->where('divisi_id', $v)
           );
           $applied['Divisi'] = Divisi::find($v)?->nama;
+        }
+      )
+      ->when(
+        $filters['jabatan_id'] ?? null,
+        function ($q, $v) use (&$applied) {
+          $q->where('jabatan_id', $v);
+
+          $jabatan = Jabatan::with('unit')->find($v);
+          if ($jabatan) {
+            $label = $jabatan->nama;
+            if ($jabatan->unit?->nama) {
+              $label = $jabatan->unit->nama . ' - ' . $jabatan->nama;
+            }
+            $applied['Jabatan'] = $label;
+          }
         }
       )
       ->when(

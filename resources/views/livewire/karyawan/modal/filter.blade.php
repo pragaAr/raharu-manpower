@@ -40,11 +40,25 @@
           
           <div class="col-md-12 mb-2">
             <label for="filter-divisiSelect" class="form-label">Divisi</label>
-            <input type="hidden" id="filter-divisiHidden" wire:model.defer="draft.divisi_id">
+            <input type="hidden" id="filter-divisiHidden" wire:model.live="draft.divisi_id">
             <div wire:ignore>
               <select id="filter-divisiSelect" class="form-select">
                 @foreach ($divisis as $divisi)
                 <option value="{{ $divisi->id }}">{{ strtoupper($divisi->nama) }}</option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-12 mb-2">
+            <label for="filter-jabatanSelect" class="form-label">Jabatan</label>
+            <input type="hidden" id="filter-jabatanHidden" wire:model.defer="draft.jabatan_id">
+            <div wire:ignore>
+              <select id="filter-jabatanSelect" class="form-select">
+                @foreach ($jabatans as $jabatan)
+                <option value="{{ $jabatan->id }}">
+                  {{ strtoupper(($jabatan->unit_nama ? $jabatan->unit_nama . ' - ' : '') . $jabatan->nama) }}
+                </option>
                 @endforeach
               </select>
             </div>

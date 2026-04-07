@@ -18,7 +18,8 @@ use Livewire\Attributes\{
 use App\Models\{
   Kategori,
   Lokasi,
-  Divisi
+  Divisi,
+  Jabatan
 };
 
 use App\Services\Karyawan\{
@@ -38,6 +39,7 @@ class Index extends Component
   public $kategori;
   public $lokasi;
   public $divisi;
+  public $jabatan;
   public $dari, $sampai;
 
   public $deleteId = null;
@@ -47,13 +49,14 @@ class Index extends Component
   public $search = '';
   public $lastPage = 1;
 
-  public $kategoris = [], $lokasis = [], $divisis = [];
+  public $kategoris = [], $lokasis = [], $divisis = [], $jabatans = [];
 
   protected array $allowedQuery = [
     'status',
     'kategori',
     'lokasi',
     'divisi',
+    'jabatan',
     'dari',
     'sampai',
     's',
@@ -64,6 +67,7 @@ class Index extends Component
     'kategori_id'     => null,
     'lokasi_id'       => null,
     'divisi_id'       => null,
+    'jabatan_id'      => null,
     'tgl_masuk_start' => null,
     'tgl_masuk_end'   => null,
   ];
@@ -74,6 +78,7 @@ class Index extends Component
     'kategori'  => ['except' => null],
     'lokasi'    => ['except' => null],
     'divisi'    => ['except' => null],
+    'jabatan'   => ['except' => null],
     'dari'      => ['except' => null],
     'sampai'    => ['except' => null],
   ];
@@ -83,9 +88,26 @@ class Index extends Component
     return blank($value) ? null : $value;
   }
 
+  protected function loadJabatanOptions(?int $divisiId = null)
+  {
+    return Jabatan::query()
+      ->join('unit', 'jabatan.unit_id', '=', 'unit.id')
+      ->when(
+        $divisiId,
+        fn($q) => $q->where('unit.divisi_id', $divisiId)
+      )
+      ->orderBy('jabatan.nama')
+      ->get([
+        'jabatan.id',
+        'jabatan.nama',
+        'unit.nama as unit_nama',
+        'unit.divisi_id as divisi_id',
+      ]);
+  }
+
   public function hydrate()
   {
-    foreach (['status', 'kategori', 'lokasi', 'divisi', 'dari', 'sampai'] as $property) {
+    foreach (['status', 'kategori', 'lokasi', 'divisi', 'jabatan', 'dari', 'sampai'] as $property) {
       if (blank($this->{$property} ?? null)) {
         $this->{$property} = null;
       }
@@ -140,6 +162,22 @@ class Index extends Component
       $this->divisi = null;
     }
 
+    if (! $this->jabatan || ! Jabatan::whereKey($this->jabatan)->exists()) {
+      $this->jabatan = null;
+    }
+
+    if ($this->divisi && $this->jabatan) {
+      $validJabatan = Jabatan::whereKey($this->jabatan)
+        ->whereHas('unit', fn($q) => $q->where('divisi_id', $this->divisi))
+        ->exists();
+
+      if (! $validJabatan) {
+        $this->jabatan = null;
+      }
+    }
+
+    $this->jabatans = $this->loadJabatanOptions($this->divisi);
+
     try {
       $this->dari   = $this->dari ? \Carbon\Carbon::parse($this->dari)->toDateString() : null;
       $this->sampai = $this->sampai ? \Carbon\Carbon::parse($this->sampai)->toDateString() : null;
@@ -152,6 +190,7 @@ class Index extends Component
       'kategori_id'     => $this->kategori,
       'lokasi_id'       => $this->lokasi,
       'divisi_id'       => $this->divisi,
+      'jabatan_id'      => $this->jabatan,
       'tgl_masuk_start' => $this->dari,
       'tgl_masuk_end'   => $this->sampai,
     ];
@@ -175,6 +214,36 @@ class Index extends Component
     $this->draft['divisi_id'] = $id;
   }
 
+  public function updatedDraftDivisiId($divisiId)
+  {
+    $divisiId = $this->nullIfBlank($divisiId);
+    $this->draft['divisi_id'] = $divisiId;
+
+    $this->jabatans = $this->loadJabatanOptions($divisiId);
+
+    $selected = $this->draft['jabatan_id'] ?? null;
+    if ($selected) {
+      $exists = $this->jabatans
+        ->firstWhere('id', (int) $selected);
+
+      if (! $exists) {
+        $selected = null;
+        $this->draft['jabatan_id'] = null;
+      }
+    }
+
+    $this->dispatch('refresh-jabatan-filter', [
+      'jabatans' => $this->jabatans,
+      'selected' => $selected,
+    ]);
+  }
+
+  #[On('setJabatan')]
+  public function setJabatan($id)
+  {
+    $this->draft['jabatan_id'] = $id;
+  }
+
   public function filter()
   {
     $draftStatus = $this->draft['status'] ?? 'aktif';
@@ -186,8 +255,22 @@ class Index extends Component
     $this->kategori = $this->nullIfBlank($this->draft['kategori_id'] ?? null);
     $this->lokasi   = $this->nullIfBlank($this->draft['lokasi_id'] ?? null);
     $this->divisi   = $this->nullIfBlank($this->draft['divisi_id'] ?? null);
+    $this->jabatan  = $this->nullIfBlank($this->draft['jabatan_id'] ?? null);
     $this->dari     = $this->nullIfBlank($this->draft['tgl_masuk_start'] ?? null);
     $this->sampai   = $this->nullIfBlank($this->draft['tgl_masuk_end'] ?? null);
+
+    if ($this->divisi && $this->jabatan) {
+      $validJabatan = Jabatan::whereKey($this->jabatan)
+        ->whereHas('unit', fn($q) => $q->where('divisi_id', $this->divisi))
+        ->exists();
+
+      if (! $validJabatan) {
+        $this->jabatan = null;
+        $this->draft['jabatan_id'] = null;
+      }
+    }
+
+    $this->jabatans = $this->loadJabatanOptions($this->divisi);
 
     $this->dispatch('closeFilter');
     $this->resetPage();
@@ -200,6 +283,7 @@ class Index extends Component
     return ($filters['kategori_id'] ?? null)
       || ($filters['lokasi_id'] ?? null)
       || ($filters['divisi_id'] ?? null)
+      || ($filters['jabatan_id'] ?? null)
       || (($filters['status'] ?? 'aktif') !== 'aktif')
       || ($filters['tgl_masuk_start'] ?? null)
       || ($filters['tgl_masuk_end'] ?? null);
@@ -211,6 +295,7 @@ class Index extends Component
     $this->kategori = null;
     $this->lokasi   = null;
     $this->divisi   = null;
+    $this->jabatan  = null;
     $this->dari     = null;
     $this->sampai   = null;
 
@@ -219,9 +304,16 @@ class Index extends Component
       'kategori_id'     => null,
       'lokasi_id'       => null,
       'divisi_id'       => null,
+      'jabatan_id'      => null,
       'tgl_masuk_start' => null,
       'tgl_masuk_end'   => null,
     ];
+
+    $this->jabatans = $this->loadJabatanOptions();
+    $this->dispatch('refresh-jabatan-filter', [
+      'jabatans' => $this->jabatans,
+      'selected' => null,
+    ]);
 
     $this->dispatch('reset-select');
     $this->dispatch('closeFilter');
@@ -251,6 +343,7 @@ class Index extends Component
       'kategori_id'     => $this->kategori,
       'lokasi_id'       => $this->lokasi,
       'divisi_id'       => $this->divisi,
+      'jabatan_id'      => $this->jabatan,
       'tgl_masuk_start' => $this->dari,
       'tgl_masuk_end'   => $this->sampai,
     ]);

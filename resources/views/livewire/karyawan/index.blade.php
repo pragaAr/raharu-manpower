@@ -377,6 +377,12 @@
           errorId: null,
           hiddenInputId: 'filter-divisiHidden',
           placeholder: 'Pilih Divisi..'
+        },
+        {
+          selectId: 'filter-jabatanSelect',
+          errorId: null,
+          hiddenInputId: 'filter-jabatanHidden',
+          placeholder: 'Pilih Jabatan..'
         }
       ])
   })
@@ -422,6 +428,23 @@
 
   Livewire.on('reset-select', () => {
     window.__plugins.filterKaryawan?.reset()
+  })
+
+  Livewire.on('refresh-jabatan-filter', (payload = {}) => {
+    const data = payload.jabatans || payload[0]?.jabatans || []
+    const selected = payload.selected ?? payload[0]?.selected ?? null
+
+    window.__plugins.filterKaryawan?.refresh(
+      'filter-jabatanSelect',
+      data,
+      (j) => `${(j.unit_nama ? j.unit_nama + ' - ' : '') + j.nama}`.toUpperCase()
+    )
+
+    if (selected) {
+      window.__plugins.filterKaryawan?.setValue('filter-jabatanSelect', selected)
+    } else {
+      window.__plugins.filterKaryawan?.clear('filter-jabatanSelect')
+    }
   })
 
   Livewire.on('open-pdf', () => window.open('/karyawan/export-pdf', '_blank'));
