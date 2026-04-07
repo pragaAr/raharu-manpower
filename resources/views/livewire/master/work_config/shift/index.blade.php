@@ -1,15 +1,17 @@
 <div>
 
- {{-- HEADER PAGE --}}
- @include('components.partials.header', ['title' => $title, 'permission' => 'divisi.create'])
+  {{-- HEADER PAGE --}}
+  @include('components.partials.header', ['title' => $title, 'permission' => 'shift.create'])
 
   {{-- TABLE --}}
   <div class="card">
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" id="search-divisi" class="form-control"
-          placeholder="Cari divisi..."
+        <input type="text"
+          id="search-shift"
+          class="form-control"
+          placeholder="Cari shift..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -18,8 +20,10 @@
           <thead>
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
-              <th class="fs-5">Divisi</th>
-              <th class="fs-5">Kode</th>
+              <th class="fs-5">Shift</th>
+              <th class="fs-5 text-center">Jam Masuk</th>
+              <th class="fs-5 text-center">Jam Pulang</th>
+              <th class="fs-5 text-center">Status</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
               @endif
@@ -30,12 +34,21 @@
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
               <td class="text-uppercase">{{ $row->nama }}</td>
-              <td class="text-uppercase">{{ $row->kode }}</td>
+              <td class="text-center">{{ $row->jam_masuk?->format('H:i') ?? '-' }}</td>
+              <td class="text-center">{{ $row->jam_pulang?->format('H:i') ?? '-' }}</td>
+              <td class="text-center">
+                @if($row->is_active)
+                <span class="badge bg-success-lt">Aktif</span>
+                @else
+                <span class="badge bg-secondary-lt">Nonaktif</span>
+                @endif
+              </td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  @can('divisi.edit')
-                  <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled" wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
+                  @can('shift.edit')
+                  <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
+                    wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="edit({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
                       style="width: 18px; height: 18px;"
@@ -52,7 +65,7 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('divisi.delete')
+                  @can('shift.delete')
                   <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
                     <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +92,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="4" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="6" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -94,7 +107,7 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.divisi-modal')
+  @include('livewire.master.work_config.shift.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>

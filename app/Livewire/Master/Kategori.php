@@ -51,7 +51,7 @@ class Kategori extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.kategori', [
+    return view('livewire.master.kategori.index', [
       'data'        => $query->paginate(10),
       'title'       => 'Kategori',
       'hasActions'  => auth()->user()->canAny([

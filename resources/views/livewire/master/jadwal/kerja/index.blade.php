@@ -178,15 +178,21 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.jadwal-kerja-modal')
+  @include('livewire.master.jadwal.kerja.addEdit-modal')
+  
   <div wire:ignore.self class="modal fade" id="generateModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered {{ $previewReady ? 'modal-xl' : 'modal-md' }}">
+    <div class="modal-dialog {{ $previewReady ? 'modal-xl' : 'modal-sm' }}">
       <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            Generate Jadwal Kerja
+          </h5>
+          <button type="button" wire:click="cancelGenerateJadwal" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
         <div class="modal-body">
-          <p class="fs-2 my-1 text-center">Generate Jadwal Satpam</p>
 
           <form id="generate-jadwal-form">
-            <div class="mt-3">
+            <div class="mt-2">
               <label for="generate-month" class="form-label">Bulan</label>
               <input type="month"
                 id="generate-month"
@@ -195,12 +201,9 @@
               @error('generateMonth')
               <small class="text-danger">{{ $message }}</small>
               @enderror
-              <small class="text-muted d-block mt-1">
-                Boleh bulan ini (maksimal minggu pertama) atau bulan depan.
-              </small>
             </div>
 
-            <div class="mt-3">
+            <div class="mt-2">
               <label for="generate-lokasiSelect" class="form-label">Lokasi</label>
               <input type="hidden" id="generate-lokasiHidden" wire:model.live="generateLokasiId">
               <div wire:ignore>
@@ -224,7 +227,7 @@
               wire:click="previewGenerateJadwalSatpam"
               wire:loading.attr="disabled"
               wire:target="previewGenerateJadwalSatpam"
-              class="btn btn-primary">
+              class="btn btn-primary w-100">
               Preview
               <span wire:loading wire:target="previewGenerateJadwalSatpam" class="spinner-border spinner-border-sm ms-2"></span>
             </button>
@@ -359,7 +362,7 @@
                 </table>
               </div>
               <small class="text-muted d-block mt-1">
-                Legenda:
+                Keterangan:
                 <span class="badge bg-green-lt">P</span> Pagi
                 <span class="badge bg-yellow-lt ms-1">S</span> Sore
                 <span class="badge bg-indigo-lt ms-1">M</span> Malam
@@ -367,23 +370,27 @@
               </small>
             </div>
           </div>
+
+          <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" wire:click="cancelGenerateJadwal" data-bs-dismiss="modal">Batal</button>
+            <button type="button"
+              class="btn btn-success"
+              wire:click="saveGenerateJadwalSatpam"
+              wire:loading.attr="disabled"
+              wire:target="saveGenerateJadwalSatpam"
+              @if(!$previewReady) disabled @endif>
+              Simpan
+              <span wire:loading wire:target="saveGenerateJadwalSatpam" class="spinner-border spinner-border-sm ms-2"></span>
+            </button>
+          </div>
           @endif
+
         </div>
-        <div class="modal-footer justify-content-center">
-          <button type="button" class="btn btn-secondary" wire:click="cancelGenerateJadwal">Batal</button>
-          <button type="button"
-            class="btn btn-success"
-            wire:click="saveGenerateJadwalSatpam"
-            wire:loading.attr="disabled"
-            wire:target="saveGenerateJadwalSatpam"
-            @if(!$previewReady) disabled @endif>
-            Simpan
-            <span wire:loading wire:target="saveGenerateJadwalSatpam" class="spinner-border spinner-border-sm ms-2"></span>
-          </button>
-        </div>
+      
       </div>
     </div>
   </div>
+
   @include('components.modal.confirm')
 
 </div>

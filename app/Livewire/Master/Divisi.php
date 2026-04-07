@@ -51,7 +51,7 @@ class Divisi extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.divisi', [
+    return view('livewire.master.divisi.index', [
       'data'      => $query->paginate(10),
       'title'     => 'Divisi',
       'hasActions' => auth()->user()->canAny([

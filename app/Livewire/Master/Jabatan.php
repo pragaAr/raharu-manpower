@@ -59,7 +59,7 @@ class Jabatan extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.jabatan', [
+    return view('livewire.master.jabatan.index', [
       'data'        => $query->paginate(10),
       'title'       => 'Jabatan',
       'hasActions'  => auth()->user()->canAny([

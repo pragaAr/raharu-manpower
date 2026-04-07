@@ -65,7 +65,7 @@ class Unit extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.unit', [
+    return view('livewire.master.unit.index', [
       'data'        => $query->paginate(10),
       'title'       => 'Unit',
       'hasActions'  => auth()->user()->canAny([

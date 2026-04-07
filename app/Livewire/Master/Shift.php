@@ -50,7 +50,7 @@ class Shift extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.shift', [
+    return view('livewire.master.work_config.shift.index', [
       'data'       => $query->paginate(10),
       'title'      => 'Shift',
       'hasActions' => auth()->user()->canAny([

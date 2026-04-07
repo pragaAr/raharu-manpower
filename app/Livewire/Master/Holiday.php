@@ -52,7 +52,7 @@ class Holiday extends Component
       })
       ->orderBy('tanggal', 'ASC');
 
-    return view('livewire.master.holiday', [
+    return view('livewire.master.work_config.holiday.index', [
       'data'       => $query->paginate(10),
       'title'      => 'Hari Libur',
       'hasActions' => auth()->user()->canAny([

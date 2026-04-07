@@ -1,17 +1,15 @@
 <div>
 
   {{-- HEADER PAGE --}}
-  @include('components.partials.header', ['title' => $title, 'permission' => 'holiday.create'])
+  @include('components.partials.header', ['title' => $title, 'permission' => 'lokasi.create'])
 
   {{-- TABLE --}}
   <div class="card">
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text"
-          id="search-holiday"
-          class="form-control"
-          placeholder="Cari hari libur..."
+        <input type="text" id="search-lokasi" class="form-control"
+          placeholder="Cari lokasi..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -20,9 +18,10 @@
           <thead>
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
-              <th class="fs-5">Tanggal</th>
-              <th class="fs-5">Nama</th>
-              <th class="fs-5 text-center">Jenis</th>
+              <th class="fs-5">Lokasi</th>
+              <th class="fs-5">Kode</th>
+              <th class="fs-5">Latitude</th>
+              <th class="fs-5">Longitude</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
               @endif
@@ -32,19 +31,29 @@
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
-              <td>{{ $row->tanggal?->translatedFormat('d F Y') ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->nama }}</td>
-              <td class="text-center">
-                @if($row->is_national)
-                <span class="badge bg-blue-lt">Nasional</span>
-                @else
-                <span class="badge bg-azure-lt">Lokal</span>
-                @endif
-              </td>
+              <td class="text-uppercase">{{ $row->kode }}</td>
+              <td>{{ $row->lat }}</td>
+              <td>{{ $row->lng }}</td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  @can('holiday.edit')
+                  <a href="https://www.google.com/maps?q={{ $row->lat }},{{ $row->lng }}"
+                    target="_blank" rel="noopener noreferrer" title="Lihat di Google Maps" class="btn btn-info btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      style="width: 18px; height: 18px;"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye me-0">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                    </svg>
+                  </a>
+                  @can('lokasi.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
                     wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
@@ -63,9 +72,10 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('holiday.delete')
-                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
-                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
+                  @can('lokasi.delete')
+                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled"
+                    wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
+                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
                       style="width: 18px; height: 18px;"
                       viewBox="0 0 24 24"
@@ -90,7 +100,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="5" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="{{ $hasActions ? 6 : 5 }}" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -105,7 +115,7 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.holiday-modal')
+  @include('livewire.master.lokasi.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>

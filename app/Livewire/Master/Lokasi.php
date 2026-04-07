@@ -53,7 +53,7 @@ class Lokasi extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.lokasi', [
+    return view('livewire.master.lokasi.index', [
       'data'        => $query->paginate(10),
       'title'       => 'Lokasi',
       'hasActions'  => auth()->user()->canAny([

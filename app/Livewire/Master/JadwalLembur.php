@@ -93,7 +93,7 @@ class JadwalLembur extends Component
       ->orderBy('tanggal', 'desc')
       ->orderBy('id', 'desc');
 
-    return view('livewire.master.jadwal-lembur', [
+    return view('livewire.master.jadwal.lembur.index', [
       'data'       => $query->paginate(10),
       'title'      => 'Jadwal Lembur',
       'hasActions' => auth()->user()->canAny([

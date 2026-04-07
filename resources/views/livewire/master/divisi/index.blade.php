@@ -1,16 +1,15 @@
 <div>
 
-  {{-- HEADER PAGE --}}
-  @include('components.partials.header', ['title' => $title, 'permission' => 'unit.create'])
+ {{-- HEADER PAGE --}}
+ @include('components.partials.header', ['title' => $title, 'permission' => 'divisi.create'])
 
   {{-- TABLE --}}
   <div class="card">
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" class="form-control"
-          id="search-unit"
-          placeholder="Cari unit..."
+        <input type="text" id="search-divisi" class="form-control"
+          placeholder="Cari divisi..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -20,7 +19,6 @@
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
               <th class="fs-5">Divisi</th>
-              <th class="fs-5">Nama</th>
               <th class="fs-5">Kode</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
@@ -31,13 +29,12 @@
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
-              <td class="text-uppercase">{{ $row->divisi->nama ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->nama }}</td>
               <td class="text-uppercase">{{ $row->kode }}</td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  @can('unit.edit')
+                  @can('divisi.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled" wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="edit({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
@@ -55,9 +52,9 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('unit.delete')
-                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" class="btn btn-danger btn-sm">
-                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="spinner-border spinner-border-sm"></span>
+                  @can('divisi.delete')
+                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
+                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
                       style="width: 18px; height: 18px;"
                       viewBox="0 0 24 24"
@@ -82,7 +79,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="5" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="4" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -97,57 +94,24 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.unit-modal')
+  @include('livewire.master.divisi.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>
 
 @push('scripts')
 <script>
-  window.__plugins = window.__plugins || {}
-
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
-
-    window.__plugins.unit =
-      createTomSelectGroup('#unit-form', [
-        {
-          selectId: 'divisi-select',
-          errorId: 'divisi-error',
-          hiddenInputId: 'divisi-hidden',
-          placeholder: 'Pilih Divisi..'
-        }
-      ]);
   })
 
-  Livewire.on('openModal', (payload = {}) => {
-    toggleModal('addEditModal', 'show');
-
-    const ts = window.__plugins.unit;
-    if (!ts) return;
-
-    if (payload.divisi_id) {
-      ts.clear('divisi-select');    
-      ts.setValue('divisi-select', payload.divisi_id); 
-    } else {
-      ts.clear('divisi-select');
-    }
-  });
-
-  Livewire.on('closeModal', () => {
-    toggleModal('addEditModal', 'hide');
-    window.__plugins.unit?.reset();
-  });
+  Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
+  Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
 
   Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
   Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
-
-  document.addEventListener('livewire:navigating', () => {
-    window.__plugins.unit?.destroy()
-    delete window.__plugins.unit
-  })
 </script>
 @endpush

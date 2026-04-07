@@ -161,7 +161,7 @@ class JadwalKerja extends Component
       ->orderBy('tanggal', 'desc')
       ->orderBy('id', 'desc');
 
-    return view('livewire.master.jadwal-kerja', [
+    return view('livewire.master.jadwal.kerja.index', [
       'data'       => $query->paginate(10),
       'title'      => 'Jadwal Kerja',
       'hasActions' => auth()->user()->canAny([

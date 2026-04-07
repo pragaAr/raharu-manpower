@@ -1,15 +1,17 @@
 <div>
 
   {{-- HEADER PAGE --}}
-  @include('components.partials.header', ['title' => $title, 'permission' => 'kategori.create'])
+  @include('components.partials.header', ['title' => $title, 'permission' => 'work-rule.create'])
 
   {{-- TABLE --}}
   <div class="card">
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" id="search-kategori" class="form-control"
-          placeholder="Cari kategori..."
+        <input type="text"
+          id="search-work-rule"
+          class="form-control"
+          placeholder="Cari aturan kerja..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -18,8 +20,13 @@
           <thead>
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
-              <th class="fs-5">Kategori</th>
-              <th class="fs-5">Keterangan</th>
+              <th class="fs-5">Jabatan</th>
+              <th class="fs-5 text-center">Shift</th>
+              <th class="fs-5 text-center">Auto Lembur</th>
+              <th class="fs-5 text-center">Approval Lembur</th>
+              <th class="fs-5 text-center">Approval Cuti</th>
+              <th class="fs-5 text-center">Double Shift</th>
+              <th class="fs-5 text-center">Tukar Shift</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
               @endif
@@ -29,12 +36,22 @@
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
-              <td class="text-uppercase">{{ $row->nama }}</td>
-              <td class="text-uppercase">{{ $row->keterangan }}</td>
+              <td>
+                <div class="fw-semibold text-uppercase">{{ $row->jabatan->nama ?? '-' }}</div>
+                <div class="text-muted text-uppercase">
+                  {{ $row->jabatan->unit->divisi->nama ?? '-' }} - {{ $row->jabatan->unit->nama ?? '-' }}
+                </div>
+              </td>
+              <td class="text-center"><span class="badge {{ $row->use_shift ? 'bg-success-lt' : 'bg-secondary-lt' }}">{{ $row->use_shift ? 'YA' : 'TIDAK' }}</span></td>
+              <td class="text-center"><span class="badge {{ $row->auto_overtime ? 'bg-success-lt' : 'bg-secondary-lt' }}">{{ $row->auto_overtime ? 'YA' : 'TIDAK' }}</span></td>
+              <td class="text-center"><span class="badge {{ $row->overtime_need_approval ? 'bg-warning-lt' : 'bg-success-lt' }}">{{ $row->overtime_need_approval ? 'YA' : 'TIDAK' }}</span></td>
+              <td class="text-center"><span class="badge {{ $row->cuti_need_approval ? 'bg-warning-lt' : 'bg-success-lt' }}">{{ $row->cuti_need_approval ? 'YA' : 'TIDAK' }}</span></td>
+              <td class="text-center"><span class="badge {{ $row->allow_double_shift ? 'bg-success-lt' : 'bg-secondary-lt' }}">{{ $row->allow_double_shift ? 'YA' : 'TIDAK' }}</span></td>
+              <td class="text-center"><span class="badge {{ $row->allow_shift_swap ? 'bg-success-lt' : 'bg-secondary-lt' }}">{{ $row->allow_shift_swap ? 'YA' : 'TIDAK' }}</span></td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  @can('kategori.edit')
+                  @can('work-rule.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
                     wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
@@ -53,7 +70,7 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('kategori.delete')
+                  @can('work-rule.delete')
                   <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
                     <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +97,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="4" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="9" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -95,24 +112,57 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.kategori-modal')
+  @include('livewire.master.work_config.work_rules.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.workRule =
+      createTomSelectGroup('#work-rule-form', [
+        {
+          selectId: 'jabatan-select',
+          errorId: 'jabatan-error',
+          hiddenInputId: 'jabatan-hidden',
+          placeholder: 'Pilih Jabatan..'
+        }
+      ]);
   })
 
-  Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
-  Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.workRule;
+    if (!ts) return;
+
+    if (payload.jabatan_id) {
+      ts.clear('jabatan-select');
+      ts.setValue('jabatan-select', payload.jabatan_id);
+    } else {
+      ts.clear('jabatan-select');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.workRule?.reset();
+  });
 
   Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
   Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.workRule?.destroy()
+    delete window.__plugins.workRule
+  })
 </script>
 @endpush

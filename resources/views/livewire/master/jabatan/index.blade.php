@@ -1,15 +1,16 @@
 <div>
 
   {{-- HEADER PAGE --}}
-  @include('components.partials.header', ['title' => $title, 'permission' => 'lokasi.create'])
+  @include('components.partials.header', ['title' => $title, 'permission' => 'jabatan.create'])
 
   {{-- TABLE --}}
   <div class="card">
     <div class="card-body border-bottom py-3">
 
       <div class="mb-3">
-        <input type="text" id="search-lokasi" class="form-control"
-          placeholder="Cari lokasi..."
+        <input type="text" class="form-control"
+          id="search-jabatan"
+          placeholder="Cari jabatan..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -18,10 +19,8 @@
           <thead>
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
-              <th class="fs-5">Lokasi</th>
-              <th class="fs-5">Kode</th>
-              <th class="fs-5">Latitude</th>
-              <th class="fs-5">Longitude</th>
+              <th class="fs-5">Unit</th>
+              <th class="fs-5">Jabatan</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
               @endif
@@ -31,31 +30,13 @@
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
+              <td class="text-uppercase">{{ $row->unit->nama ?? '-' }}</td>
               <td class="text-uppercase">{{ $row->nama }}</td>
-              <td class="text-uppercase">{{ $row->kode }}</td>
-              <td>{{ $row->lat }}</td>
-              <td>{{ $row->lng }}</td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  <a href="https://www.google.com/maps?q={{ $row->lat }},{{ $row->lng }}"
-                    target="_blank" rel="noopener noreferrer" title="Lihat di Google Maps" class="btn btn-info btn-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                      style="width: 18px; height: 18px;"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye me-0">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-                    </svg>
-                  </a>
-                  @can('lokasi.edit')
-                  <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
-                    wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
+                  @can('jabatan.edit')
+                  <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled" wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="edit({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
                       style="width: 18px; height: 18px;"
@@ -72,10 +53,9 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('lokasi.delete')
-                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled"
-                    wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
-                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm"></span>
+                  @can('jabatan.delete')
+                  <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
+                    <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
                       style="width: 18px; height: 18px;"
                       viewBox="0 0 24 24"
@@ -100,7 +80,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="{{ $hasActions ? 6 : 5 }}" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="4" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -115,24 +95,57 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.lokasi-modal')
+  @include('livewire.master.jabatan.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>
 
 @push('scripts')
 <script>
+  window.__plugins = window.__plugins || {}
+
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
+
+    window.__plugins.jabatan =
+      createTomSelectGroup('#jabatan-form', [
+        {
+          selectId: 'unit-select',
+          errorId: 'unit-error',
+          hiddenInputId: 'unit-hidden',
+          placeholder: 'Pilih Unit..'
+        }
+      ]);
   })
 
-  Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
-  Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
+  Livewire.on('openModal', (payload = {}) => {
+    toggleModal('addEditModal', 'show');
+
+    const ts = window.__plugins.jabatan;
+    if (!ts) return;
+
+    if (payload.unit_id) {
+      ts.clear('unit-select');    
+      ts.setValue('unit-select', payload.unit_id); 
+    } else {
+      ts.clear('unit-select');
+    }
+  });
+
+  Livewire.on('closeModal', () => {
+    toggleModal('addEditModal', 'hide');
+    window.__plugins.jabatan?.reset();
+  });
 
   Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
   Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));
+
+  document.addEventListener('livewire:navigating', () => {
+    window.__plugins.jabatan?.destroy()
+    delete window.__plugins.jabatan
+  })
 </script>
 @endpush

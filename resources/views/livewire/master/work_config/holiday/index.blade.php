@@ -1,7 +1,7 @@
 <div>
 
   {{-- HEADER PAGE --}}
-  @include('components.partials.header', ['title' => $title, 'permission' => 'jadwal-lembur.create'])
+  @include('components.partials.header', ['title' => $title, 'permission' => 'holiday.create'])
 
   {{-- TABLE --}}
   <div class="card">
@@ -9,9 +9,9 @@
 
       <div class="mb-3">
         <input type="text"
-          id="search-jadwal-lembur"
+          id="search-holiday"
           class="form-control"
-          placeholder="Cari jadwal lembur..."
+          placeholder="Cari hari libur..."
           wire:model.live.debounce.300ms="search">
       </div>
 
@@ -21,11 +21,8 @@
             <tr>
               <th class="fs-5 text-center" style="width:8%">#</th>
               <th class="fs-5">Tanggal</th>
-              <th class="fs-5">Karyawan</th>
-              <th class="fs-5 text-center">Tipe</th>
-              <th class="fs-5 text-center">Jam</th>
-              <th class="fs-5 text-center">Status</th>
-              <th class="fs-5">Approver</th>
+              <th class="fs-5">Nama</th>
+              <th class="fs-5 text-center">Jenis</th>
               @if($hasActions)
               <th class="fs-5 text-center">Aksi</th>
               @endif
@@ -35,22 +32,19 @@
             @forelse ($data as $i => $row)
             <tr wire:key="{{ $row->id }}">
               <td class="text-center">{{ $data->firstItem() + $i }}.</td>
-              <td>{{ $row->tanggal?->format('d-m-Y') ?? '-' }}</td>
-              <td class="text-uppercase">
-                <div class="fw-semibold">{{ $row->karyawan->nik ?? '-' }}</div>
-                <div class="text-muted">{{ $row->karyawan->nama ?? '-' }}</div>
-              </td>
-              <td class="text-center text-uppercase">{{ $row->type }}</td>
-              <td class="text-center">{{ $row->jam_mulai?->format('H:i') ?? '-' }} - {{ $row->jam_selesai?->format('H:i') ?? '-' }}</td>
-              <td class="text-center text-uppercase">{{ $row->status }}</td>
-              <td>
-                <div class="text-uppercase">{{ $row->approver->username ?? '-' }}</div>
-                <small class="text-muted">{{ $row->approved_at?->format('d-m-Y H:i') ?? '-' }}</small>
+              <td>{{ $row->tanggal?->translatedFormat('d F Y') ?? '-' }}</td>
+              <td class="text-uppercase">{{ $row->nama }}</td>
+              <td class="text-center">
+                @if($row->is_national)
+                <span class="badge bg-blue-lt">Nasional</span>
+                @else
+                <span class="badge bg-azure-lt">Lokal</span>
+                @endif
               </td>
               @if($hasActions)
               <td class="text-center">
                 <div class="btn-group" role="group" style="gap: 3px;">
-                  @can('jadwal-lembur.edit')
+                  @can('holiday.edit')
                   <button wire:click="edit({{ $row->id }})" wire:loading.attr="disabled"
                     wire:target="edit({{ $row->id }})" title="Edit" class="btn btn-warning btn-sm">
                     <span wire:loading wire:target="edit({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
@@ -69,7 +63,7 @@
                     </svg>
                   </button>
                   @endcan
-                  @can('jadwal-lembur.delete')
+                  @can('holiday.delete')
                   <button wire:click="confirmDelete({{ $row->id }})" wire:loading.attr="disabled" wire:target="confirmDelete({{ $row->id }})" title="Hapus" class="btn btn-danger btn-sm">
                     <span wire:loading wire:target="confirmDelete({{ $row->id }})" class="spinner-border spinner-border-sm p-2"></span>
                     <svg wire:loading.remove wire:target="confirmDelete({{ $row->id }})" xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +90,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="{{ $hasActions ? 8 : 7 }}" class="text-center text-muted">Belum ada data.</td>
+              <td colspan="5" class="text-center text-muted">Belum ada data.</td>
             </tr>
             @endforelse
           </tbody>
@@ -111,84 +105,22 @@
   </div>
 
   {{-- MODAL --}}
-  @include('livewire.master.jadwal-lembur-modal')
+  @include('livewire.master.work_config.holiday.addEdit-modal')
   @include('components.modal.confirm')
 
 </div>
 
 @push('scripts')
 <script>
-  window.__plugins = window.__plugins || {}
-
   document.addEventListener('livewire:navigated', () => {
     const modalEl = document.getElementById('addEditModal');
     const modalConfirm = document.getElementById('confirmModal');
 
     blurActiveElementOnModalHide([modalEl, modalConfirm]);
-
-    window.__plugins.jadwalLembur =
-      createTomSelectGroup('#jadwal-lembur-form', [
-        {
-          selectId: 'jadwal-lembur-karyawanSelect',
-          errorId: 'jadwal-lembur-karyawanError',
-          hiddenInputId: 'jadwal-lembur-karyawanHidden',
-          placeholder: 'Pilih Karyawan..'
-        },
-        {
-          selectId: 'jadwal-lembur-approverSelect',
-          errorId: 'jadwal-lembur-approverError',
-          hiddenInputId: 'jadwal-lembur-approverHidden',
-          placeholder: 'Pilih Approver..'
-        }
-      ])
   })
 
-  document.addEventListener('livewire:navigating', () => {
-    window.__plugins.jadwalLembur?.destroy()
-    delete window.__plugins.jadwalLembur
-  })
-
-  Livewire.on('openModal', (payload = {}) => {
-    toggleModal('addEditModal', 'show');
-
-    const ts = window.__plugins.jadwalLembur;
-    if (!ts) return;
-
-    if (Array.isArray(payload.karyawan_options)) {
-      ts.refresh('jadwal-lembur-karyawanSelect', payload.karyawan_options, (item) => {
-        const nik = String(item.nik ?? '').toUpperCase();
-        const nama = String(item.nama ?? '').toUpperCase();
-        return [nik, nama].filter(Boolean).join(' - ');
-      });
-    }
-
-    if (Array.isArray(payload.approver_options)) {
-      ts.refresh('jadwal-lembur-approverSelect', payload.approver_options, (item) => {
-        const username = String(item.username ?? '').toUpperCase();
-        const nama = String(item.nama ?? '').toUpperCase();
-        return [username, nama].filter(Boolean).join(' - ');
-      });
-    }
-
-    if (payload.karyawan_id) {
-      ts.clear('jadwal-lembur-karyawanSelect');
-      ts.setValue('jadwal-lembur-karyawanSelect', payload.karyawan_id);
-    } else {
-      ts.clear('jadwal-lembur-karyawanSelect');
-    }
-
-    if (payload.approved_by) {
-      ts.clear('jadwal-lembur-approverSelect');
-      ts.setValue('jadwal-lembur-approverSelect', payload.approved_by);
-    } else {
-      ts.clear('jadwal-lembur-approverSelect');
-    }
-  });
-
-  Livewire.on('closeModal', () => {
-    toggleModal('addEditModal', 'hide');
-    window.__plugins.jadwalLembur?.reset();
-  });
+  Livewire.on('openModal', () => toggleModal('addEditModal', 'show'));
+  Livewire.on('closeModal', () => toggleModal('addEditModal', 'hide'));
 
   Livewire.on('openConfirmModal', () => toggleModal('confirmModal', 'show'));
   Livewire.on('closeConfirmModal', () => toggleModal('confirmModal', 'hide'));

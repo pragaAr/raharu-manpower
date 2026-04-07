@@ -99,7 +99,7 @@ class WorkRule extends Component
       })
       ->orderBy('id', 'ASC');
 
-    return view('livewire.master.work-rule', [
+    return view('livewire.master.work_config.work_rules.index', [
       'data'       => $query->paginate(10),
       'title'      => 'Aturan Kerja',
       'hasActions' => auth()->user()->canAny([
