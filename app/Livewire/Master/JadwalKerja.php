@@ -5,6 +5,7 @@ namespace App\Livewire\Master;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 use Livewire\{
@@ -18,6 +19,7 @@ use App\Models\{
   Karyawan,
   Lokasi,
   ShiftMaster,
+  ShiftRequirement,
   Holiday
 };
 
@@ -59,6 +61,8 @@ class JadwalKerja extends Component
   public $previewJadwalGrid = [];
   public $previewPlanOffByDate = [];
   public $previewPlanLokasiId;
+  public $previewShiftShortages = [];
+  public $generateSeed;
 
   protected $queryString = [
     'search' => [
@@ -412,7 +416,8 @@ class JadwalKerja extends Component
       return;
     }
 
-    $plan = $this->buildSatpamPlan($inputs['start'], $inputs['lokasi_id']);
+    $this->generateSeed = time() + mt_rand(1, 1000);
+    $plan = $this->buildSatpamPlan($inputs['start'], $inputs['lokasi_id'], $this->generateSeed);
     if (!$plan) {
       return;
     }
@@ -429,6 +434,7 @@ class JadwalKerja extends Component
     $this->previewJadwalGrid = $plan['jadwalGridPreview'];
     $this->previewPlanOffByDate = $plan['offByDate'];
     $this->previewPlanLokasiId = $this->generateLokasiId;
+    $this->previewShiftShortages = $plan['shiftShortages'] ?? [];
   }
 
   public function saveGenerateJadwalSatpam()
@@ -450,7 +456,7 @@ class JadwalKerja extends Component
       return;
     }
 
-    $plan = $this->buildSatpamPlan($inputs['start'], $inputs['lokasi_id']);
+    $plan = $this->buildSatpamPlan($inputs['start'], $inputs['lokasi_id'], $this->generateSeed);
     if (!$plan) {
       $this->dispatch('alert', [
         'type'    => 'error',
@@ -489,6 +495,8 @@ class JadwalKerja extends Component
     $this->previewJadwalGrid = [];
     $this->previewPlanOffByDate = [];
     $this->previewPlanLokasiId = null;
+    $this->previewShiftShortages = [];
+    $this->generateSeed = null;
   }
 
   protected function defaultGenerateMonth(): string
@@ -572,8 +580,15 @@ class JadwalKerja extends Component
     return $lokasiId;
   }
 
-  protected function buildSatpamPlan(Carbon $start, ?int $lokasiId = null): ?array
+  /**
+   * Build array of dates, libur assignment, and shift array.
+   */
+  protected function buildSatpamPlan(Carbon $start, ?int $lokasiId, int $seed = 0): ?array
   {
+    if ($seed > 0) {
+      mt_srand($seed);
+    }
+
     $end = $start->copy()->endOfMonth();
 
     $maxLiburBeruntun = (int) config('jadwal.max_libur_beruntun', 2);
@@ -651,8 +666,37 @@ class JadwalKerja extends Component
     }
 
     $satpamsByLokasi = $satpams->groupBy(fn($s) => $s->lokasi_id ?? 0);
+    $weeks = $this->buildWeeks($start, $end);
+    $weekCount = count($weeks);
+    $weekIndexByDate = [];
+    foreach ($weeks as $weekIndex => $weekDates) {
+      foreach ($weekDates as $dateStr) {
+        $weekIndexByDate[$dateStr] = $weekIndex;
+      }
+    }
 
     foreach ($satpamsByLokasi as $lokasiKey => $group) {
+      $maxOffPerDay = $this->resolveMaxOffPerDay($lokasiKey, $group->count());
+      if ($group->count() > 1) {
+        $maxOffPerDay = min($maxOffPerDay, $group->count() - 1);
+      }
+
+      if ($maxOffPerDay <= 0) {
+        $lokasiLabel = $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi';
+        $this->dispatch('alert', [
+          'type'    => 'error',
+          'message' => "Tidak ada kapasitas libur harian untuk {$lokasiLabel}. Periksa kebutuhan shift atau jumlah satpam."
+        ]);
+        return null;
+      }
+
+      $minLiburByLokasi[$lokasiKey] = [
+        'lokasi' => $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi',
+        'min' => $weekCount,
+        'jumlah_satpam' => $group->count(),
+        'max_off_per_day' => $maxOffPerDay,
+      ];
+
       foreach ($group as $satpam) {
         $ruleDays = $satpam->workRule?->days?->keyBy('day_of_week') ?? collect();
 
@@ -662,16 +706,20 @@ class JadwalKerja extends Component
             $ruleDay = $ruleDays->get($dayOfWeek);
 
             if ($ruleDay && !$ruleDay->is_workday) {
-              if (isset($offByDate[$lokasiKey][$dateStr]) && $offByDate[$lokasiKey][$dateStr] !== $satpam->id) {
+              $offByDate[$lokasiKey][$dateStr] = $offByDate[$lokasiKey][$dateStr] ?? [];
+              if (count($offByDate[$lokasiKey][$dateStr]) >= $maxOffPerDay
+                && !in_array($satpam->id, $offByDate[$lokasiKey][$dateStr], true)) {
                 $lokasiLabel = $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi';
                 $this->dispatch('alert', [
                   'type'    => 'error',
-                  'message' => "Terdeteksi lebih dari satu satpam libur di {$dateStr} ({$lokasiLabel})."
+                  'message' => "Kuota libur harian penuh di {$dateStr} ({$lokasiLabel})."
                 ]);
                 return null;
               }
 
-              $offByDate[$lokasiKey][$dateStr] = $satpam->id;
+              if (!in_array($satpam->id, $offByDate[$lokasiKey][$dateStr], true)) {
+                $offByDate[$lokasiKey][$dateStr][] = $satpam->id;
+              }
               if (!in_array($dateStr, $offByKaryawan[$satpam->id], true)) {
                 $offByKaryawan[$satpam->id][] = $dateStr;
               }
@@ -694,20 +742,67 @@ class JadwalKerja extends Component
             continue;
           }
 
-          if (isset($offByDate[$lokasiKey][$dateStr]) && $offByDate[$lokasiKey][$dateStr] !== $satpam->id) {
+          $offByDate[$lokasiKey][$dateStr] = $offByDate[$lokasiKey][$dateStr] ?? [];
+          if (count($offByDate[$lokasiKey][$dateStr]) >= $maxOffPerDay
+            && !in_array($satpam->id, $offByDate[$lokasiKey][$dateStr], true)) {
             $lokasiLabel = $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi';
             $this->dispatch('alert', [
               'type'    => 'error',
-              'message' => "Terdeteksi lebih dari satu satpam libur di {$dateStr} ({$lokasiLabel})."
+              'message' => "Kuota libur harian penuh di {$dateStr} ({$lokasiLabel})."
             ]);
             return null;
           }
 
-          $offByDate[$lokasiKey][$dateStr] = $satpam->id;
+          if (!in_array($satpam->id, $offByDate[$lokasiKey][$dateStr], true)) {
+            $offByDate[$lokasiKey][$dateStr][] = $satpam->id;
+          }
           if (!in_array($dateStr, $offByKaryawan[$satpam->id], true)) {
             $offByKaryawan[$satpam->id][] = $dateStr;
           }
         }
+      }
+
+      $offByWeek = [];
+      foreach ($group as $satpam) {
+        foreach ($offByKaryawan[$satpam->id] as $dateStr) {
+          $weekIndex = $weekIndexByDate[$dateStr] ?? null;
+          if ($weekIndex !== null) {
+            $offByWeek[$satpam->id][$weekIndex] = true;
+          }
+        }
+      }
+
+      $maxConsecutiveWork = (int) config('jadwal.max_consecutive_work', 6);
+      $interval = $maxConsecutiveWork + 1; // Default 7 (libur tiap 7 hari)
+
+      $satpamsArray = $group->all();
+      // Acak urutan agar pembagian offset berbeda setiap klik preview
+      shuffle($satpamsArray);
+
+      $satpamIndex = 0;
+      foreach ($satpamsArray as $satpam) {
+        $satpamId = $satpam->id;
+        
+        // Offset mendistribusikan satpam agar tidak libur di hari yang sama melebih kapasitas maksimum
+        $offset = $maxOffPerDay > 0 
+            ? (int) floor($satpamIndex / $maxOffPerDay) % $interval 
+            : $satpamIndex % $interval;
+
+        for ($day = 1; $day <= $start->daysInMonth; $day++) {
+          if (($day - 1) % $interval === $offset) {
+            $candidate = $start->copy()->addDays($day - 1)->toDateString();
+
+            // Tambahkan jadwal libur merata (jika belum diset sebelumnya via jadwal manual dsb)
+            $offByDate[$lokasiKey][$candidate] = $offByDate[$lokasiKey][$candidate] ?? [];
+            if (!in_array($satpamId, $offByDate[$lokasiKey][$candidate], true)) {
+              $offByDate[$lokasiKey][$candidate][] = $satpamId;
+            }
+            if (!in_array($candidate, $offByKaryawan[$satpamId], true)) {
+              $offByKaryawan[$satpamId][] = $candidate;
+            }
+          }
+        }
+        $satpamIndex++;
       }
     }
 
@@ -716,79 +811,6 @@ class JadwalKerja extends Component
         $this->dispatch('alert', [
           'type'    => 'error',
           'message' => "Libur satpam {$satpam->nama} melebihi batas {$maxLiburBeruntun} hari berturut-turut."
-        ]);
-        return null;
-      }
-    }
-
-    $neededByKaryawan = [];
-
-    foreach ($satpamsByLokasi as $lokasiKey => $group) {
-      $minLiburForLokasi = $this->resolveMinLiburForLokasi($start, $group->count());
-      $minLiburByLokasi[$lokasiKey] = [
-        'lokasi' => $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi',
-        'min' => $minLiburForLokasi,
-        'jumlah_satpam' => $group->count(),
-      ];
-
-      $totalNeeded = 0;
-      foreach ($group as $satpam) {
-        $currentOff = count($offByKaryawan[$satpam->id]);
-        $need = max(0, $minLiburForLokasi - $currentOff);
-        $neededByKaryawan[$satpam->id] = $need;
-        $totalNeeded += $need;
-      }
-
-      $availableDates = array_values(array_diff($dates, array_keys($offByDate[$lokasiKey] ?? [])));
-      if ($totalNeeded > count($availableDates)) {
-        $lokasiLabel = $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi';
-        $detailParts = [];
-        foreach ($group as $satpam) {
-          $detailParts[] = "{$satpam->nama}: butuh {$neededByKaryawan[$satpam->id]} (libur saat ini " . count($offByKaryawan[$satpam->id]) . ")";
-        }
-        $detailInfo = implode(', ', $detailParts);
-        $this->dispatch('alert', [
-          'type'    => 'error',
-          'message' => "Tidak cukup hari kosong untuk memenuhi kuota libur minimal satpam di {$lokasiLabel}. Kuota per orang {$minLiburForLokasi}, hari kosong " . count($availableDates) . ", kebutuhan {$totalNeeded}. Detail: {$detailInfo}."
-        ]);
-        return null;
-      }
-
-      $progress = true;
-      while ($totalNeeded > 0 && $progress) {
-        $progress = false;
-        foreach ($group as $satpam) {
-          if ($neededByKaryawan[$satpam->id] <= 0) {
-            continue;
-          }
-
-          foreach ($availableDates as $index => $candidate) {
-            if ($this->wouldExceedConsecutive($offByKaryawan[$satpam->id], $candidate, $maxLiburBeruntun)) {
-              continue;
-            }
-
-            $offByDate[$lokasiKey][$candidate] = $satpam->id;
-            $offByKaryawan[$satpam->id][] = $candidate;
-            unset($availableDates[$index]);
-            $availableDates = array_values($availableDates);
-            $neededByKaryawan[$satpam->id]--;
-            $totalNeeded--;
-            $progress = true;
-            break;
-          }
-        }
-      }
-
-      if ($totalNeeded > 0) {
-        $lokasiLabel = $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi';
-        $detailParts = [];
-        foreach ($group as $satpam) {
-          $detailParts[] = "{$satpam->nama}: butuh {$neededByKaryawan[$satpam->id]}";
-        }
-        $detailInfo = implode(', ', $detailParts);
-        $this->dispatch('alert', [
-          'type'    => 'error',
-          'message' => "Gagal menyusun libur sesuai aturan di {$lokasiLabel}. Kuota per orang {$minLiburForLokasi}, sisa kebutuhan {$totalNeeded}. Detail: {$detailInfo}. Coba ubah konfigurasi atau periksa jadwal manual."
         ]);
         return null;
       }
@@ -819,13 +841,15 @@ class JadwalKerja extends Component
 
     $offByDatePreview = [];
     foreach ($offByDate as $lokasiKey => $dateMap) {
-      foreach ($dateMap as $dateStr => $satpamId) {
-        $satpam = $satpamById[$satpamId] ?? null;
-        $offByDatePreview[] = [
-          'tanggal' => Carbon::parse($dateStr)->format('d-m-Y'),
-          'lokasi'  => $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi',
-          'satpam'  => $satpam?->nama ?? '-',
-        ];
+      foreach ($dateMap as $dateStr => $satpamIds) {
+        foreach ($satpamIds as $satpamId) {
+          $satpam = $satpamById[$satpamId] ?? null;
+          $offByDatePreview[] = [
+            'tanggal' => Carbon::parse($dateStr)->format('d-m-Y'),
+            'lokasi'  => $lokasiById[$lokasiKey] ?? 'Tanpa Lokasi',
+            'satpam'  => $satpam?->nama ?? '-',
+          ];
+        }
       }
     }
 
@@ -843,15 +867,31 @@ class JadwalKerja extends Component
       ];
     }
 
+    // Build shift maps for all satpams upfront (respecting forbidden transition)
+    $shiftMapBySatpam = [];
+    foreach ($satpams as $satpam) {
+      $lokasiKey = $satpam->lokasi_id ?? 0;
+      $offByDateLokasi = $offByDate[$lokasiKey] ?? [];
+      
+      $generateRandomOffset = mt_rand(0, 100);
+      $shiftMapBySatpam[$satpam->id] = $satpam->workRule?->use_shift
+        ? $this->buildShiftMapForSatpam($satpam->id, $dates, $offByDateLokasi, $shiftRotation, $generateRandomOffset)
+        : [];
+    }
+
+    // Rebalance shifts (fill coverage gaps using duplicated shifts without violating rules)
+    $this->rebalanceShiftCoverage($dates, $satpams, $shiftMapBySatpam, $shiftRotation, $lokasiId);
+
     $jadwalBySatpamPreview = [];
     $jadwalGridPreview = [];
     foreach ($satpams as $satpam) {
       $ruleDays = $satpam->workRule?->days?->keyBy('day_of_week') ?? collect();
-      $offset = $satpam->id % max(1, count($shiftRotation));
       $lokasiKey = $satpam->lokasi_id ?? 0;
       $offByDateLokasi = $offByDate[$lokasiKey] ?? [];
       $items = [];
       $grid = [];
+
+      $shiftMap = $shiftMapBySatpam[$satpam->id] ?? [];
 
       for ($day = 1; $day <= $start->daysInMonth; $day++) {
         $date = $start->copy()->addDays($day - 1);
@@ -861,16 +901,17 @@ class JadwalKerja extends Component
         $isWorkday = $satpam->workRule?->use_shift ? true : ($ruleDay?->is_workday ?? true);
 
         $isLibur = !$isWorkday;
-        if (isset($offByDateLokasi[$dateStr]) && $offByDateLokasi[$dateStr] === $satpam->id) {
+        if (in_array($satpam->id, $offByDateLokasi[$dateStr] ?? [], true)) {
           $isLibur = true;
         }
 
         if ($isLibur) {
           $code = 'L';
-        } elseif ($satpam->workRule?->use_shift) {
-          $dayIndex = $start->diffInDays($date);
-          $shift = $shiftRotation[($offset + $dayIndex) % count($shiftRotation)];
+        } elseif ($satpam->workRule?->use_shift && isset($shiftMap[$dateStr])) {
+          $shift = $shiftMap[$dateStr];
           $code = strtoupper(substr((string) $shift->nama, 0, 1));
+        } elseif ($satpam->workRule?->use_shift) {
+          $code = 'L';
         } else {
           $code = 'W';
         }
@@ -892,6 +933,11 @@ class JadwalKerja extends Component
       ];
     }
 
+    // Validate per-shift coverage against shift_requirement
+    $shiftShortages = $this->validateShiftCoverage(
+      $dates, $satpams, $shiftMapBySatpam, $offByDate, $lokasiById, $lokasiId
+    );
+
     $gridDays = range(1, $start->daysInMonth);
 
     $liburBySatpam = [];
@@ -910,6 +956,7 @@ class JadwalKerja extends Component
       'holidaySet'       => $holidaySet,
       'offByDate'        => $offByDate,
       'shiftRotation'    => $shiftRotation,
+      'shiftMapBySatpam' => $shiftMapBySatpam,
       'minLiburByLokasi' => array_values($minLiburByLokasi),
       'summary'          => [
         'created' => $created,
@@ -922,6 +969,7 @@ class JadwalKerja extends Component
       'jadwalGridPreview' => $jadwalGridPreview,
       'gridDays' => $gridDays,
       'liburBySatpam'    => $liburBySatpam,
+      'shiftShortages'   => $shiftShortages,
     ];
   }
 
@@ -935,16 +983,14 @@ class JadwalKerja extends Component
     $dates = $plan['dates'];
     $holidaySet = $plan['holidaySet'];
     $offByDate = $plan['offByDate'];
-    $shiftRotation = $plan['shiftRotation'];
-    $start = $plan['start'];
+    $shiftMapBySatpam = $plan['shiftMapBySatpam'] ?? [];
 
     DB::transaction(function () use (
       $satpams,
       $dates,
       $holidaySet,
       $offByDate,
-      $shiftRotation,
-      $start,
+      $shiftMapBySatpam,
       &$created,
       &$updated,
       &$skipped
@@ -954,10 +1000,11 @@ class JadwalKerja extends Component
           ->keyBy(fn($jadwal) => $jadwal->tanggal?->toDateString());
 
         $ruleDays = $satpam->workRule?->days?->keyBy('day_of_week') ?? collect();
-        $offset = $satpam->id % max(1, count($shiftRotation));
 
         $lokasiKey = $satpam->lokasi_id ?? 0;
         $offByDateLokasi = $offByDate[$lokasiKey] ?? [];
+
+        $shiftMap = $shiftMapBySatpam[$satpam->id] ?? [];
 
         foreach ($dates as $dateStr) {
           $existing = $existingByDate->get($dateStr);
@@ -972,7 +1019,7 @@ class JadwalKerja extends Component
           $isWorkday = $satpam->workRule?->use_shift ? true : ($ruleDay?->is_workday ?? true);
 
           $isLibur = !$isWorkday;
-          if (isset($offByDateLokasi[$dateStr]) && $offByDateLokasi[$dateStr] === $satpam->id) {
+          if (in_array($satpam->id, $offByDateLokasi[$dateStr] ?? [], true)) {
             $isLibur = true;
           }
 
@@ -982,14 +1029,13 @@ class JadwalKerja extends Component
           $jamPulang = null;
 
           if (!$isLibur) {
-            if ($satpam->workRule?->use_shift) {
-              $dayIndex = $start->diffInDays($date);
-              $shift = $shiftRotation[($offset + $dayIndex) % count($shiftRotation)];
+            if ($satpam->workRule?->use_shift && isset($shiftMap[$dateStr])) {
+              $shift = $shiftMap[$dateStr];
               $shiftId = $shift->id;
               $shiftNama = $shift->nama;
               $jamMasuk = $shift->jam_masuk?->format('H:i');
               $jamPulang = $shift->jam_pulang?->format('H:i');
-            } else {
+            } elseif (!$satpam->workRule?->use_shift) {
               $shiftNama = null;
               $jamMasuk = $ruleDay?->jam_masuk?->format('H:i');
               $jamPulang = $ruleDay?->jam_pulang?->format('H:i');
@@ -1179,15 +1225,362 @@ class JadwalKerja extends Component
     return $result;
   }
 
-  protected function resolveMinLiburForLokasi(Carbon $start, int $satpamCount): int
+  /**
+   * Validate per-shift coverage against shift_requirement table.
+   * Returns array of shortages for preview warning.
+   */
+  protected function validateShiftCoverage(
+    array $dates,
+    $satpams,
+    array $shiftMapBySatpam,
+    array $offByDate,
+    array $lokasiById,
+    ?int $lokasiId
+  ): array {
+    if (!Schema::hasTable('shift_requirement')) {
+      return [];
+    }
+
+    $query = ShiftRequirement::with('shift:id,nama');
+    if ($lokasiId) {
+      $query->where('lokasi_id', $lokasiId);
+    }
+    $requirements = $query->get();
+
+    if ($requirements->isEmpty()) {
+      return [];
+    }
+
+    // Build requirements map: shift_id => [required_count, shift_nama]
+    $reqMap = [];
+    foreach ($requirements as $req) {
+      $reqMap[$req->shift_id] = [
+        'required_count' => (int) $req->required_count,
+        'shift_nama'     => $req->shift?->nama ?? '-',
+        'lokasi'         => $lokasiById[$lokasiId ?? 0] ?? 'Tanpa Lokasi',
+      ];
+    }
+
+    // Count per-shift-per-date coverage
+    $shiftCountByDate = []; // dateStr => [shift_id => count]
+    foreach ($satpams as $satpam) {
+      $shiftMap = $shiftMapBySatpam[$satpam->id] ?? [];
+      foreach ($shiftMap as $dateStr => $shift) {
+        if ($shift) {
+          $shiftCountByDate[$dateStr][$shift->id] =
+            ($shiftCountByDate[$dateStr][$shift->id] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Check shortages
+    $shortages = [];
+    foreach ($dates as $dateStr) {
+      foreach ($reqMap as $shiftId => $req) {
+        $actual = $shiftCountByDate[$dateStr][$shiftId] ?? 0;
+        if ($actual < $req['required_count']) {
+          $shortages[] = [
+            'tanggal'   => Carbon::parse($dateStr)->format('d-m-Y'),
+            'shift'     => strtoupper($req['shift_nama']),
+            'lokasi'    => $req['lokasi'],
+            'kebutuhan' => $req['required_count'],
+            'tersedia'  => $actual,
+            'kurang'    => $req['required_count'] - $actual,
+          ];
+        }
+      }
+    }
+
+    return $shortages;
+  }
+
+  /**
+   * Build a shift map for a satpam across all dates, respecting:
+   * - Grouped rotation: each shift repeats for N days (config: shift_days_per_rotation)
+   * - Forbidden transition: malam → pagi on next_day is not allowed
+   * - Max consecutive malam: (config: max_consecutive_malam)
+   * - Libur (off) days break the constraint chain
+   *
+   * Example with shift_days_per_rotation=2:
+   *   P P S S M M [buffer S] P P S S M M [buffer S] ...
+   *
+   * @param  int    $satpamId       ID karyawan satpam
+   * @param  array  $dates          Ordered list of date strings (Y-m-d)
+   * @param  array  $offByDateLokasi  Map of dateStr => [satpamIds...] yang libur
+   * @param  array  $shiftRotation  Ordered shift rotation objects
+   * @return array<string, \App\Models\ShiftMaster>  Map of dateStr => ShiftMaster (working days only)
+   */
+  protected function buildShiftMapForSatpam(
+    int $satpamId,
+    array $dates,
+    array $offByDateLokasi,
+    array $shiftRotation,
+    int $randomOffset = 0
+  ): array {
+    $baseCount = count($shiftRotation);
+    if ($baseCount === 0) {
+      return [];
+    }
+
+    $daysPerShift = max(1, (int) config('jadwal.shift_days_per_rotation', 2));
+    $maxConsecutiveMalam = max(1, (int) config('jadwal.max_consecutive_malam', 2));
+
+    // Expand rotation: [P, S, M] with daysPerShift=2 → [P, P, S, S, M, M]
+    // Malam dibatasi oleh maxConsecutiveMalam
+    $expandedRotation = [];
+    foreach ($shiftRotation as $shift) {
+      $name = strtolower((string) $shift->nama);
+      $repeat = ($name === 'malam')
+        ? min($daysPerShift, $maxConsecutiveMalam)
+        : $daysPerShift;
+      for ($i = 0; $i < $repeat; $i++) {
+        $expandedRotation[] = $shift;
+      }
+    }
+
+    $rotationCount = count($expandedRotation);
+    $rotationIndex = (($satpamId * $daysPerShift) + $randomOffset) % $rotationCount;
+    $shiftMap = [];
+    $prevShiftName = null;
+
+    // Cache sore shift untuk buffer
+    $soreShift = null;
+    foreach ($shiftRotation as $s) {
+      if (strtolower((string) $s->nama) === 'sore') {
+        $soreShift = $s;
+        break;
+      }
+    }
+
+    foreach ($dates as $dateStr) {
+      // Jika hari ini libur, tidak ada shift dan reset constraint chain
+      if (in_array($satpamId, $offByDateLokasi[$dateStr] ?? [], true)) {
+        $prevShiftName = null;
+        continue;
+      }
+
+      // Tentukan shift dari rotasi yang sudah di-expand
+      $shift = $expandedRotation[$rotationIndex % $rotationCount];
+      $shiftName = strtolower((string) $shift->nama);
+
+      // Cek forbidden transition: malam → pagi pada hari berikutnya
+      if ($prevShiftName === 'malam' && $shiftName === 'pagi') {
+        // Sisipkan sore sebagai buffer, JANGAN majukan rotation index
+        if ($soreShift) {
+          $shiftMap[$dateStr] = $soreShift;
+          $prevShiftName = 'sore';
+          continue;
+        }
+      }
+
+      $shiftMap[$dateStr] = $shift;
+      $prevShiftName = $shiftName;
+      $rotationIndex++;
+    }
+
+    return $shiftMap;
+  }
+
+  /**
+   * Rebalance shift coverage by shifting overlapping guards from surplus
+   * shifts to shortage shifts to ensure all requirement slots are filled,
+   * without violating safety constraints (forbidden_transition, max_consecutive).
+   */
+  protected function rebalanceShiftCoverage(
+    array $dates,
+    $satpams,
+    array &$shiftMapBySatpam,
+    array $shiftRotation,
+    ?int $lokasiId
+  ): void {
+    if ($satpams->isEmpty() || empty($shiftRotation)) {
+      return;
+    }
+
+    // 1. Get Requirements
+    $reqMap = []; // shift_id => required_count
+    if (Schema::hasTable('shift_requirement')) {
+      $query = ShiftRequirement::query();
+      if ($lokasiId) {
+        $query->where('lokasi_id', $lokasiId);
+      } else {
+        $query->whereNull('lokasi_id');
+      }
+      $requirements = $query->get();
+      foreach ($requirements as $req) {
+        $reqMap[$req->shift_id] = (int) $req->required_count;
+      }
+    }
+
+    // Default target: setidaknya 1 orang per shift jika tidak ada database requirement
+    if (empty($reqMap)) {
+      foreach ($shiftRotation as $shift) {
+        $reqMap[$shift->id] = 1;
+      }
+    }
+
+    $shiftById = [];
+    foreach ($shiftRotation as $shift) {
+      $shiftById[$shift->id] = $shift;
+    }
+    
+    $maxConsecutiveMalam = max(1, (int) config('jadwal.max_consecutive_malam', 2));
+
+    foreach ($dates as $dateIndex => $dateStr) {
+      // Hitung ketersediaan dan guard per shift saat ini
+      $currentCounts = [];
+      $guardsByShift = []; 
+      
+      foreach ($satpams as $satpam) {
+        $shift = $shiftMapBySatpam[$satpam->id][$dateStr] ?? null;
+        if ($shift) {
+          $currentCounts[$shift->id] = ($currentCounts[$shift->id] ?? 0) + 1;
+          $guardsByShift[$shift->id][] = $satpam->id;
+        }
+      }
+
+      // Deteksi shortages dan surpluses
+      $shortages = [];
+      $surpluses = [];
+      foreach ($reqMap as $shiftId => $reqCount) {
+        $actual = $currentCounts[$shiftId] ?? 0;
+        if ($actual < $reqCount) {
+          $shortages[$shiftId] = $reqCount - $actual;
+        } elseif ($actual > $reqCount) {
+          $surpluses[$shiftId] = $actual - $reqCount;
+        }
+      }
+
+      // Geser satpam untuk meratakan shortage
+      $moved = true;
+      while ($moved && !empty($shortages) && !empty($surpluses)) {
+        $moved = false;
+
+        foreach ($shortages as $shortageShiftId => &$shortQty) {
+          if ($shortQty <= 0) continue;
+
+          foreach ($surpluses as $surplusShiftId => &$surpQty) {
+            if ($surpQty <= 0) continue;
+
+            // Coba geser salah satu guard dari shift surplus ke shift shortage
+            foreach ($guardsByShift[$surplusShiftId] ?? [] as $idx => $satpamId) {
+              $targetShift = $shiftById[$shortageShiftId] ?? null;
+              if (!$targetShift) continue;
+              
+              $targetName = strtolower((string) $targetShift->nama);
+              $yesterdayStr = $dateIndex > 0 ? $dates[$dateIndex - 1] : null;
+              $tomorrowStr = $dateIndex < count($dates) - 1 ? $dates[$dateIndex + 1] : null;
+              
+              $yesterdayShift = $yesterdayStr ? ($shiftMapBySatpam[$satpamId][$yesterdayStr] ?? null) : null;
+              $tomorrowShift = $tomorrowStr ? ($shiftMapBySatpam[$satpamId][$tomorrowStr] ?? null) : null;
+              
+              $yesterdayName = $yesterdayShift ? strtolower((string)$yesterdayShift->nama) : null;
+              $tomorrowName = $tomorrowShift ? strtolower((string)$tomorrowShift->nama) : null;
+
+              // Constraint 1: Forbidden transition (Malam -> Pagi keesokan harinya)
+              if ($yesterdayName === 'malam' && $targetName === 'pagi') continue;
+              if ($targetName === 'malam' && $tomorrowName === 'pagi') continue;
+
+              // Constraint 2: Max consecutive malam
+              if ($targetName === 'malam') {
+                $consecutive = 1;
+                $b = $dateIndex - 1;
+                while ($b >= 0) {
+                  $bShift = $shiftMapBySatpam[$satpamId][$dates[$b]] ?? null;
+                  if ($bShift && strtolower((string)$bShift->nama) === 'malam') {
+                    $consecutive++;
+                    $b--;
+                  } else {
+                    break;
+                  }
+                }
+                $f = $dateIndex + 1;
+                while ($f < count($dates)) {
+                  $fShift = $shiftMapBySatpam[$satpamId][$dates[$f]] ?? null;
+                  if ($fShift && strtolower((string)$fShift->nama) === 'malam') {
+                    $consecutive++;
+                    $f++;
+                  } else {
+                    break;
+                  }
+                }
+                if ($consecutive > $maxConsecutiveMalam) continue; 
+              }
+
+              // Guard eligible -> lakukan swap shift
+              $shiftMapBySatpam[$satpamId][$dateStr] = $targetShift;
+              
+              // Update tracking lists 
+              unset($guardsByShift[$surplusShiftId][$idx]);
+              $guardsByShift[$surplusShiftId] = array_values($guardsByShift[$surplusShiftId]);
+              $guardsByShift[$shortageShiftId][] = $satpamId;
+
+              $shortQty--;
+              $surpQty--;
+              
+              if ($shortQty <= 0) unset($shortages[$shortageShiftId]);
+              if ($surpQty <= 0) unset($surpluses[$surplusShiftId]);
+
+              $moved = true;
+              break 3; // Restart pemeriksaan ulang from shortages
+            }
+          }
+        }
+      }
+    }
+  }
+
+  protected function buildWeeks(Carbon $start, Carbon $end): array
   {
-    $daysInMonth = $start->daysInMonth;
-    $weeksInMonth = (int) ceil($daysInMonth / 7);
-    $weeksInMonth = max(3, min(4, $weeksInMonth));
+    $weeks = [];
+    $weekIndexByStart = [];
 
-    $capacity = intdiv($daysInMonth, max(1, $satpamCount));
+    for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+      $weekStart = $date->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+      if (!isset($weekIndexByStart[$weekStart])) {
+        $weekIndexByStart[$weekStart] = count($weeks);
+        $weeks[] = [];
+      }
+      $weeks[$weekIndexByStart[$weekStart]][] = $date->toDateString();
+    }
 
-    return max(0, min($weeksInMonth, $capacity));
+    return $weeks;
+  }
+
+  protected function resolveWeeklyOffTarget(Carbon $start): int
+  {
+    $end = $start->copy()->endOfMonth();
+    return count($this->buildWeeks($start, $end));
+  }
+
+  protected function resolveMaxOffPerDay(int $lokasiKey, int $satpamCount): int
+  {
+    if ($satpamCount <= 0) {
+      return 0;
+    }
+
+    $maxOff = 0;
+    $hasRequirement = false;
+    if (Schema::hasTable('shift_requirement')) {
+      $query = DB::table('shift_requirement');
+      if ($lokasiKey) {
+        $query->where('lokasi_id', $lokasiKey);
+      } else {
+        $query->whereNull('lokasi_id');
+      }
+
+      $requiredTotal = (int) $query->sum('required_count');
+      if ($requiredTotal > 0) {
+        $hasRequirement = true;
+        $maxOff = $satpamCount - $requiredTotal;
+      }
+    }
+
+    if (!$hasRequirement) {
+      $maxOff = (int) ceil($satpamCount / 7);
+    }
+
+    return max(0, $maxOff);
   }
 
   protected function maxConsecutiveOff(array $offDates): int
@@ -1278,10 +1671,20 @@ class JadwalKerja extends Component
       $satpamCountQuery->whereNull('lokasi_id');
     }
 
-    $minLibur = $this->resolveMinLiburForLokasi($start, $satpamCountQuery->count());
+    $satpamCount = $satpamCountQuery->count();
+    $minLibur = $this->resolveWeeklyOffTarget($start);
+    $maxOffPerDay = $this->resolveMaxOffPerDay($lokasiId ?? 0, $satpamCount);
+    if ($satpamCount > 1) {
+      $maxOffPerDay = min($maxOffPerDay, $satpamCount - 1);
+    }
 
     if ((bool) $this->isLibur) {
-      $conflict = JadwalKaryawanModel::whereDate('tanggal', $date->toDateString())
+      if ($maxOffPerDay <= 0) {
+        $this->addError('isLibur', 'Tidak ada kapasitas libur harian untuk lokasi ini.');
+        return false;
+      }
+
+      $conflictCount = JadwalKaryawanModel::whereDate('tanggal', $date->toDateString())
         ->where('is_libur', true)
         ->where('karyawan_id', '!=', $this->karyawanId)
         ->whereHas('karyawan', function ($q) use ($lokasiId) {
@@ -1295,11 +1698,11 @@ class JadwalKerja extends Component
             $q->whereNull('lokasi_id');
           }
         })
-        ->exists();
+        ->count();
 
-      if ($conflict) {
+      if ($conflictCount >= $maxOffPerDay) {
         $lokasiLabel = $karyawan->lokasi?->nama ?? 'Tanpa Lokasi';
-        $this->addError('isLibur', "Tidak boleh ada 2 satpam libur di hari yang sama untuk lokasi {$lokasiLabel}.");
+        $this->addError('isLibur', "Kuota libur harian penuh untuk lokasi {$lokasiLabel} (maks {$maxOffPerDay}).");
         return false;
       }
     }
@@ -1329,11 +1732,34 @@ class JadwalKerja extends Component
 
     if ($currentIsLibur && !(bool) $this->isLibur) {
       if (count($existingLiburDates) < $minLibur) {
-        $this->addError('isLibur', "Minimal libur per bulan adalah {$minLibur} hari.");
+        $this->addError('isLibur', "Minimal libur per bulan (1 per minggu) adalah {$minLibur} hari.");
         return false;
       }
     }
 
     return true;
+  }
+
+  protected function wouldExceedMaxConsecutiveWork(array $offDates, string $candidate, string $startOfMonth, int $maxConsecutiveWork): bool
+  {
+    $allOff = array_merge($offDates, [$candidate]);
+    sort($allOff);
+    
+    // Asumsikan hari pertama bulan adalah batas, jadi selisih hari libur pertama dari awal bulan tidak boleh melebihi maxConsecutiveWork
+    $start = Carbon::parse($startOfMonth);
+    $firstOff = Carbon::parse($allOff[0]);
+    if ($firstOff->diffInDays($start) > $maxConsecutiveWork) {
+      return true;
+    }
+    
+    for ($i = 1; $i < count($allOff); $i++) {
+       $prev = Carbon::parse($allOff[$i-1]);
+       $curr = Carbon::parse($allOff[$i]);
+       if ($curr->diffInDays($prev) - 1 > $maxConsecutiveWork) {
+           return true; 
+       }
+    }
+    
+    return false;
   }
 }
