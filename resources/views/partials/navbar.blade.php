@@ -105,9 +105,9 @@
           </li>
 
           {{-- Master Dropdown --}}
-          @if(auth()->user()->canAny(['lokasi.view', 'divisi.view', 'unit.view', 'jabatan.view', 'kategori.view', 'shift.view', 'holiday.view', 'work-rule.view', 'jadwal-kerja.view', 'jadwal-lembur.view']))
+          @if(auth()->user()->canAny(['lokasi.view', 'divisi.view', 'unit.view', 'jabatan.view', 'kategori.view', 'shift.view', 'shift-requirement.view', 'holiday.view', 'work-rule.view', 'jadwal-kerja.view', 'jadwal-lembur.view']))
           <li class="nav-item dropdown
-          {{ in_array(request()->segment(1), ['lokasi','divisi','unit','jabatan', 'kategori', 'shift', 'holiday', 'work-rule', 'jadwal-kerja', 'jadwal-lembur']) ? 'active' : '' }}">
+          {{ in_array(request()->segment(1), ['lokasi','divisi','unit','jabatan', 'kategori', 'shift', 'shift-requirement', 'holiday', 'work-rule', 'jadwal-kerja', 'jadwal-lembur']) ? 'active' : '' }}">
             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <svg xmlns="http://www.w3.org/2000/svg" 
@@ -156,14 +156,17 @@
               @endcan
 
               {{-- Nested: Work Config --}}
-              @if(auth()->user()->canAny(['shift.view', 'holiday.view', 'work-rule.view']))
+              @if(auth()->user()->canAny(['shift.view', 'shift-requirement.view', 'holiday.view', 'work-rule.view']))
               <div class="dropend">
-                <a class="dropdown-item dropdown-toggle {{ in_array(request()->segment(1), ['shift','holiday','work-rule']) ? 'active' : '' }}" href="#sidebar-work-config" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                <a class="dropdown-item dropdown-toggle {{ in_array(request()->segment(1), ['shift','shift-requirement','holiday','work-rule']) ? 'active' : '' }}" href="#sidebar-work-config" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                   - Work Config
                 </a>
                 <div class="dropdown-menu">
                   @can('shift.view')
                   <a class="dropdown-item {{ request()->segment(1) == 'shift' ? 'active' : '' }}" href="{{ url('/shift') }}" wire:navigate>Shift</a>
+                  @endcan
+                  @can('shift-requirement.view')
+                  <a class="dropdown-item {{ request()->segment(1) == 'shift-requirement' ? 'active' : '' }}" href="{{ url('/shift-requirement') }}" wire:navigate>Shift Requirement</a>
                   @endcan
                   @can('holiday.view')
                   <a class="dropdown-item {{ request()->segment(1) == 'holiday' ? 'active' : '' }}" href="{{ url('/holiday') }}" wire:navigate>Hari Libur</a>
