@@ -32,6 +32,7 @@ use App\Livewire\Master\{
   Jabatan,
   Kategori,
   Shift,
+  ShiftRequirement,
   Holiday,
   WorkRule,
   JadwalKerja,
@@ -97,6 +98,9 @@ Route::middleware(['auth', 'can:web.access'])->group(function () {
     Route::get('/shift', Shift::class)
       ->name('shift.index')
       ->middleware('can:shift.view');
+    Route::get('/shift-requirement', ShiftRequirement::class)
+      ->name('shift-requirement.index')
+      ->middleware('can:shift-requirement.view');
     Route::get('/holiday', Holiday::class)
       ->name('holiday.index')
       ->middleware('can:holiday.view');
