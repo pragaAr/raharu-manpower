@@ -263,6 +263,49 @@
           </div>
           @endif
 
+          @if(!empty($previewShiftShortages))
+          <div class="mb-3">
+            <div class="alert alert-warning mb-2">
+              <div class="d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler me-2" width="24" height="24"
+                  viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M12 9v4" />
+                  <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" />
+                  <path d="M12 16h.01" />
+                </svg>
+                <strong>Kekurangan Personil Per Shift</strong>
+              </div>
+              <small class="text-muted">Beberapa tanggal tidak memenuhi kebutuhan minimal dari tabel <code>shift_requirement</code>.</small>
+            </div>
+            <div class="table-responsive" style="max-height: 200px;">
+              <table class="table table-sm table-bordered table-vcenter">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Shift</th>
+                    <th class="text-center">Kebutuhan</th>
+                    <th class="text-center">Tersedia</th>
+                    <th class="text-center">Kurang</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach($previewShiftShortages as $row)
+                  <tr class="bg-yellow-lt">
+                    <td>{{ $row['tanggal'] }}</td>
+                    <td>{{ $row['shift'] }}</td>
+                    <td class="text-center">{{ $row['kebutuhan'] }}</td>
+                    <td class="text-center">{{ $row['tersedia'] }}</td>
+                    <td class="text-center fw-bold text-danger">-{{ $row['kurang'] }}</td>
+                  </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          </div>
+          @endif
+
           <div class="row g-2 mb-3">
             <div class="col-4">
               <div class="border rounded p-2 text-center">
@@ -288,7 +331,7 @@
             <div class="col-12">
               <div class="fw-semibold mb-2">Libur Per Satpam</div>
               <div class="table-responsive" style="max-height: 240px;">
-                <table class="table table-sm table-bordered">
+                <table class="table table-sm table-bordered table-vcenter">
                   <thead>
                     <tr>
                       <th>Lokasi</th>
@@ -318,7 +361,7 @@
             <div class="col-12">
               <div class="fw-semibold mb-2">Jadwal Kerja (Grid)</div>
               <div class="table-responsive" style="max-height: 320px;">
-                <table class="table table-sm table-bordered">
+                <table class="table table-sm table-bordered table-vcenter">
                   <thead>
                     <tr>
                       <th>Lokasi</th>
